@@ -1,0 +1,2755 @@
+---
+title: "Résultats de l’enquête sur les usages des chercheurs de l'ULB en matière de gestion des données de recherche"
+author: "Groupe de Travail Gestion des Données de la Recherche"
+date: "12 Juin 2017"
+output: 
+  html_document:
+    toc: true
+    toc_float: true 
+    number_sections: yes
+    theme: spacelab
+---
+
+```{r setup, include=FALSE}
+options(knitr.table.format = "html")
+knitr::opts_chunk$set(echo = FALSE)
+library(plotly)
+library('knitr')
+library(ggplot2)
+library(scales)
+library(plyr)
+library(RColorBrewer)
+library(kableExtra)
+```
+
+\ 
+\
+\
+
+
+# Contexte
+
+La gestion des données de la recherche est devenue une préoccupation majeure dans les milieux scientifiques pour de multiples raisons. 
+
+Notamment, avec le passage à l’ère numérique, on a pu observer une perte massive des données de la recherche. Au fil du temps, ces dernières sont en effet devenues inaccessibles, illisibles, ininterprétables, ou ont simplement été égarées.
+
+En outre, l’accès aux données de la recherche représente à l’heure actuelle un enjeu important pour garantir la crédibilité et la reproductibilité des résultats scientifiques. Ainsi, de plus en plus de revues scientifiques et de bailleurs de fonds exigent que les données qui sous-tendent les résultats soient conservées, accessibles et/ou réutilisables. 
+
+Enfin, les chercheurs sont confrontés aux problèmes de la gestion quotidienne de leurs données : stockage, archivage, description, traitement, partage, anonymisation, etc. 
+
+Afin d’amorcer la réflexion sur la thématique de la gestion des données de la recherche à l’ULB, le Conseil de l’information documentaire a mis en place un groupe de travail constitué de chercheurs et de membres des départements Recherche, Informatique et des Bibliothèques & Information scientifique. 
+
+
+\
+\
+
+
+# Etude de référence
+
+Le sondage est largement inspiré par une étude autrichienne portant sur 21 universités publiques, 3 centres de recherche totalisant 3026 répondants:
+
+**Researchers and Their Data. Results of an Austrian Survey- Report 2015**
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.34005.svg)](https://doi.org/10.5281/zenodo.34005) 
+
+
+\
+\
+
+
+# Méthode 
+
+Le groupe de travail a souhaité recueillir des informations sur les pratiques des chercheurs de l’ULB dans la gestion de leurs données de recherche à l'aide d'un sondage Limesurvey adressé par email à tous les responsables d'unité de recherche à l'ULB sur base d'une liste de contact fournie par le Département Recherche.
+
+Les informations recueillies permettent d’avoir une vue d’ensemble des usages à l’ULB et guideront le groupe de travail pour établir un bilan de la situation actuelle et déterminer l’éventuelle disparité entre la situation à l’ULB et les exigences des revues scientifiques et des bailleurs de fonds.
+
+Le sondage pouvait être complété :
+
+- soit au nom de l'unité de recherche dans sa globalité en spécifiant le nombre total de chercheurs concernés
+
+- soit à titre individuel en tant que chercheur.
+
+On exprime les résultats en "équivalents-réponses" : pour les réponses au nom d'une unité de recherche, on considère que tous les chercheurs de l'unité de recherche répondraient de manière identique aux questions.
+
+
+\
+\
+
+
+# Traitement des données
+
+Les données ont été récoltées à l'aide de **LimeSurvey**, exportées au format CSV et traitées à l'aide du logiciel **RStudio 1.0.143** et  **R version 3.3.3 (2017-03-06)**.
+
+Les graphiques sont réalisés à l'aide du package *plotly 4.7.0*.
+
+Le rapport est rédigé en R Markdown et généré en HTML à l'aide de *Knit 1.16*.
+
+
+\
+\
+
+
+# Objectifs
+
+L'enquête vise plusieurs objectifs:
+
+- connaître les besoins et attentes des chercheurs de l’ULB
+
+- définir les priorités dans les besoins
+
+- confronter aux résultats obtenus lors d’autres enquêtes
+
+- identifier les chercheurs sensibilisés à la problématique
+
+- légitimer nos propositions
+
+- sensibiliser les chercheurs et les autorités
+
+
+\
+\
+
+
+# Echantillon
+
+Cette section décrit l'échantillon collecté.
+
+## Caractéristiques de l'échantillon
+```{r load_data}
+#first convert csv to utf8 !
+mydata <- read.csv("./results-survey-110617.csv", header=TRUE, sep=",")
+library(data.table)
+dt<-as.data.table(mydata)
+
+library(splitstackshape)
+expanded_data <-expandRows(dt, "Combien.de.chercheurs.compte.votre.unité.de.recherche..")
+number_responses <- nrow(mydata)
+number_eq_responses <- sum(mydata$Combien.de.chercheurs.compte.votre.unité.de.recherche..)
+
+fac_count <- count(data.table(fac_name=expanded_data$A.quelle.faculté..institut.ou.école.est.rattachée.votre.unité.de.recherche..), "fac_name")
+
+fac_data <- data.frame(fac_name= c("Faculté de Médecine",
+       "Faculté des Sciences",
+       "Faculté des Sciences appliquées - école polytechnique",
+       "Faculté Solvay Brussels School of Economics and Management",
+       "Faculté des Sciences psychologiques et de l'Education",
+       "Faculté de Lettres, Traduction et Communication",
+       "Faculté de Philosophie et Sciences sociales",
+       "Faculté d'Architecture (La Cambre-Horta)",
+       "Faculté de Droit/Ecole des sciences criminologiques",
+       "Faculté des Sciences de la motricité",
+       "Ecole de Santé publique",
+       "Institut d'études européennes",
+       "Centres de recherche transdisciplinaires",
+       "Section interfacultaire d'agrégation",
+       "Faculté de Pharmacie",
+       "Autre"
+),
+fac_color=c('rgb(227,33,25)', 'rgb(116,116,193)', 'rgb(26,23,27)','rgb(246,169,36)','rgb(0,107,179)', 'rgb(133,135,140)','rgb(0,143,194)','rgb(144,190,69)','rgb(226,0,122)','rgb(227,33,25)','rgb(227,33,25)','rgb(0,80,154)','rgb(100,100,100)','rgb(100,100,100)','rgb(0,110,81)','rgb(100,100,100)'),
+fac_size=c(666,640,367,231,200,426,534,79,293,224,81,80,NA,NA,291,NA)) 
+
+fac_total <- merge(fac_count,fac_data,by="fac_name", all=TRUE)
+fac_total$freq[is.na(fac_total$freq)] <- 0
+
+fac_total$percentage <- fac_total$freq/fac_total$fac_size*100
+fac_total$percentage[is.na(fac_total$percentage)] <- 0
+
+number_tot_researchers <- sum(fac_data$fac_size, na.rm=TRUE)
+response_rate <- sum(fac_count$freq, na.rm=TRUE)/sum(fac_data$fac_size,na.rm=TRUE)*100 
+
+median_response_time <- median(mydata$Temps.total..)/60
+
+```
+
+
+\
+
+
+**Nombre total d'équivalent-résponses : ** `r toString(number_eq_responses)`
+
+**Nombre total de répondants à l'enquête :**  `r toString(number_responses)`
+
+**Population globale de chercheur : ** `r toString(number_tot_researchers)`
+
+**Taux de participation moyen : ** `r format(response_rate, digits=3)` %
+
+**Nombre moyen de chercheurs par réponse : **
+`r format(mean(mydata$Combien.de.chercheurs.compte.votre.unité.de.recherche..), digits=3)`
+
+**Nombre maximal de chercheurs par réponse : **
+`r toString(max(mydata$Combien.de.chercheurs.compte.votre.unité.de.recherche..))`
+
+**Temps médian de réponse au questionnaire : ** `r format(median_response_time, digits=1)` min
+
+
+## Date de soumission des réponses 
+
+L'enquête a été menée du 27 avril au 12 juin 2017.
+
+L'histogramme ci-dessous décrit le nombre de réponses collectées quotidiennement sur la durée de l'enquête.
+
+L'email d'invitation à participer à l'enquête a été envoyé le 2 mai 2017. Un email de relance a été adressé à tous le 15 mai 2017. 
+
+```{r hist2_data}
+mydata$Date.de.soumission <- strptime(mydata$Date.de.soumission, format="%Y-%m-%d %H:%M:%S")
+h <- hist(as.numeric(mydata$Date.de.soumission)*1000, breaks=47, plot = FALSE)
+  plot_ly(x = h$mids, y = h$counts) %>% add_bars(name = "Sturges") %>% 
+  layout(xaxis=list(type="date", tickformat="%d-%m-%Y"))
+
+```
+
+## Nombre d'équivalent-réponses par faculté
+
+On observe une très large participation de la faculté des Sciences avec 250 équivalent-réponses collectées.
+
+
+```{r eq_reponse_par_fac, fig.width = 8, fig.height = 8}
+fac_total<-fac_total[with(fac_total, order(fac_total$freq)),]
+
+trace1 <- list(
+  x =fac_total$freq, 
+  y =fac_total$fac_name, 
+  marker = list(color=fac_total$fac_color),
+  name = "Faculté", 
+  opacity = 1, 
+  orientation = "h", 
+  type = "bar", 
+  uid = "6a5b81"
+)
+
+layout <- list(
+   annotations = list(
+    list(
+      x = 2.57368421053, 
+      y = 2.5, 
+      align = "center", 
+      arrowcolor = "rgba(0, 0, 0, 0)", 
+      arrowhead = 1, 
+      arrowsize = 1, 
+      arrowwidth = 0, 
+      ax = 9, 
+      ay = 29.9833374023, 
+      bgcolor = "rgba(0,0,0,0)", 
+      bordercolor = "rgba(0,0,0,0)", 
+      borderpad = 1, 
+      borderwidth = 1, 
+      font = list(
+        color = "#444", 
+        family = "\"Open sans\", verdana, arial, sans-serif", 
+        size = 10
+      ), 
+      opacity = 1, 
+      showarrow = TRUE, 
+      text = fac_total$freq, 
+      textangle = 0, 
+      xanchor = "auto", 
+      xref = "x", 
+      yanchor = "auto", 
+      yref = "y"
+    )
+  ), 
+  autosize = TRUE, 
+  bargap = 0.2, 
+  bargroupgap = 0.15, 
+  barmode = "group", 
+  boxgap = 0.3, 
+  boxgroupgap = 0.3, 
+  boxmode = "overlay", 
+  dragmode = "zoom", 
+  font = list(
+    color = "#000", 
+    family = "'Open sans', verdana, arial, sans-serif", 
+    size = 12
+  ), 
+  hidesources = TRUE, 
+  hovermode = "y", 
+  margin = list(
+    r = 10, 
+    t = 80, 
+    autoexpand = FALSE, 
+    b = 200, 
+    l = 200, 
+    pad = 0
+  ), 
+  paper_bgcolor = "#fff", 
+  plot_bgcolor = "rgb(238, 235, 234)", 
+  separators = ".,", 
+  showlegend = FALSE, 
+  #title = "<br>Participation par faculté", 
+  titlefont = list(
+    color = "#000", 
+    family = "'Open sans', verdana, arial, sans-serif", 
+    size = 17
+  ), 
+  xaxis = list(
+    anchor = "y", 
+    autorange = TRUE, 
+    autotick = TRUE, 
+    domain = c(0.3, 1), 
+    dtick = 1, 
+    exponentformat = "SI", 
+    gridcolor = "rgb(255, 255, 255)", 
+    gridwidth = 1, 
+    linecolor = "#444", 
+    linewidth = 1, 
+    mirror = FALSE, 
+    nticks = 0, 
+    overlaying = FALSE, 
+    position = 0, 
+    range = c(50, 100), 
+    rangemode = "normal", 
+    showexponent = "all", 
+    showgrid = TRUE, 
+    showline = FALSE, 
+    showticklabels = TRUE, 
+    tick0 = 0, 
+    tickangle = 0, 
+    tickcolor = "#444", 
+    tickfont = list(
+      color = "#000", 
+      family = "'Open sans', verdana, arial, sans-serif", 
+      size = 12
+    ), 
+    ticklen = 5, 
+    ticks = "", 
+    tickwidth = 1, 
+    title = "Nombre d'équivalent-réponses reçues", 
+    titlefont = list(
+      color = "#000", 
+      family = "'Open sans', verdana, arial, sans-serif", 
+      size = 14
+    ), 
+    type = "linear", 
+    zeroline = FALSE, 
+    zerolinecolor = "#444", 
+    zerolinewidth = 1
+  ),
+  yaxis = list(
+    anchor = "x", 
+    autorange = TRUE, 
+    autotick = TRUE, 
+    domain = c(0, 1), 
+    dtick = 50000, 
+    exponentformat = "SI", 
+    gridcolor = "rgb(255, 255, 255)", 
+    gridwidth = 1, 
+    linecolor = "#444", 
+    linewidth = 1, 
+    mirror = FALSE, 
+    nticks = 0, 
+    overlaying = FALSE, 
+    position = 0, 
+    range = c(-0.5, 9.5), 
+    rangemode = "normal", 
+    showexponent = "all", 
+    showgrid = TRUE, 
+    showline = FALSE, 
+    showticklabels = TRUE, 
+    tick0 = 0, 
+    tickangle = 0, 
+    tickcolor = "#444", 
+    tickfont = list(
+      color = "#000", 
+      family = "'Open sans', verdana, arial, sans-serif", 
+      size = 10
+    ), 
+    ticklen = 5, 
+    ticks = "", 
+    tickwidth = 1, 
+    titlefont = list(
+      color = "#000", 
+      family = "'Open sans', verdana, arial, sans-serif", 
+      size = 14
+    ), 
+    type = "category", 
+    zeroline = FALSE, 
+    zerolinecolor = "#444", 
+    zerolinewidth = 1
+  )
+)
+
+layout$yaxis$categoryarray <- fac_total$fac_name
+layout$yaxis$categoryorder <- "array"
+
+p <- plot_ly()
+p <- add_trace(p, x=trace1$x, y=trace1$y, marker=trace1$marker, name=trace1$name, opacity=trace1$opacity, orientation=trace1$orientation, type=trace1$type, uid=trace1$uid)
+
+p <- layout(p, annotations=layout$annotations, autosize=layout$autosize, bargap=layout$bargap, barmode=layout$barmode, dragmode=layout$dragmode, font=layout$font, height=layout$height, hidesources=layout$hidesources, hovermode=layout$hovermode, margin=layout$margin, paper_bgcolor=layout$paper_bgcolor, plot_bgcolor=layout$plot_bgcolor, separators=layout$separators, showlegend=layout$showlegend, title=layout$title, titlefont=layout$titlefont, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis)
+p
+
+```
+
+Le taux de participation par faculté est calculé sur base du nombre de chercheurs par faculté transmis par le département recherche:
+
+```{r nb_chercheurs}
+
+kable(data.frame(Faculté=fac_data$fac_name, Nb.Chercheurs=fac_data$fac_size)) %>% kable_styling(c("striped", "bordered", full_width = FALSE, "condensed"))
+  
+```
+
+On notera que la participation dépasse les **10%** pour **7 facultés** :
+`r kable(fac_total$fac_name[fac_total$percentage > 10])`
+
+```{r perc_eq_reponse_par_fac, fig.width = 8, fig.height = 8}
+fac_total<-fac_total[with(fac_total, order(fac_total$percentage)),]
+
+trace1 <- list(
+  x =fac_total$percentage, 
+  y =fac_total$fac_name, 
+  marker = list(color=fac_total$fac_color),
+  name = "Faculté", 
+  opacity = 1, 
+  orientation = "h", 
+  type = "bar", 
+  uid = "6a5b81"
+)
+
+#layout$annotations$text <- fac_total$percentage
+#layout$title <- "<br>Participation par faculté" 
+layout$xaxis$title <- "Participation en pourcent"
+layout$yaxis$categoryarray <- fac_total$fac_name
+layout$yaxis$categoryorder <- "array"
+
+p <- plot_ly()
+p <- add_trace(p, x=trace1$x, y=trace1$y, marker=trace1$marker, name=trace1$name, opacity=trace1$opacity, orientation=trace1$orientation, type=trace1$type, uid=trace1$uid)
+
+p <- layout(p, annotations=layout$annotations, autosize=layout$autosize, bargap=layout$bargap, barmode=layout$barmode, dragmode=layout$dragmode, font=layout$font, height=layout$height, hidesources=layout$hidesources, hovermode=layout$hovermode, margin=layout$margin, paper_bgcolor=layout$paper_bgcolor, plot_bgcolor=layout$plot_bgcolor, separators=layout$separators, showlegend=layout$showlegend, title=layout$title, titlefont=layout$titlefont, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis)
+p
+
+```
+
+## Participation par âge
+
+Le graphique ci-dessous indique les tranches d'âge des répondants au questionnaire. Toutes les tranches d'âge sont représentées. 
+
+On observe une large majorité de répondants dans la tranche d'âge "entre 30 et 50 ans".
+
+![Tip](./warning-98596_640.png) Les usages collectés correspondent vraisemblablement en majorité à des **chercheurs confirmés**.
+
+```{r age}
+age<-table(mydata$Quelle.est.votre.tranche.d.âge..)
+
+age_data <- data.frame(age)
+
+p <- plot_ly(age_data, labels = ~Var1, values = ~Freq, type = 'pie',
+        textposition = 'inside',
+        textinfo = 'label+percent',
+        insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        text = ~paste('', Freq, ' répondants'),
+        marker = list(colors = brewer.pal(3, "Paired"),
+                      line = list(color = '#FFFFFF', width = 1)),
+                
+        showlegend = TRUE) %>%
+        
+        layout(#title = 'Tranche d\'âge des répondants',
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+p
+```
+
+## Participation par campus
+
+Les usages collectés concernent des chercheurs établis sur tous les campus de l'ULB.
+
+On notera qu'une majorité des répondants exercent principalement leurs activités de recherche sur les campus du Solbosch, de la Plaine et d'Erasme.
+
+```{r campus}
+campus<-table(expanded_data$Sur.quel.campus.travaillez.vous.principalement..)
+
+campus_data <- count(data.table(labels=expanded_data$Sur.quel.campus.travaillez.vous.principalement..), "labels")
+
+colors <- brewer.pal(6, "Spectral")
+
+p <- plot_ly(campus_data, labels = campus_data$label, values = campus_data$freq, type = 'pie',
+        textposition = 'outside',
+        textinfo = 'label+percent',
+        sort = TRUE,
+        direction='clockwise',
+        domain=list(x=list(0.2,0.7),y=list(0,0.7)),
+        insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        text = ~paste('', campus_data$freq, ' répondants'),
+        
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+                      showlegend = TRUE)
+      #layout(title = 'Sur quel campus travaillez-vous principalement ?')
+p
+```
+
+
+## Participation par langue
+
+Une majorité de répondants a rempli le formulaire en français.
+
+```{r langue}
+
+language_name <- c(
+"Français",
+"Anglais")
+
+language_value<-c(sum(mydata$Langue.de.départ=="fr"),
+sum(mydata$Langue.de.départ=="en")
+)                                                                        
+            
+language_data <- data.frame(language_name, language_value)
+
+colors <- c("rgb(100,149,237)","rgb(220,20,60)")
+
+p <- plot_ly(language_data, labels = language_name, values = language_value, 
+        type = 'pie',
+        sort=FALSE,
+        direction='clockwise',
+        
+        textposition = 'outside',
+        textinfo = 'label+percent',
+        #insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+        domain=list(x=list(0.2,0.7),y=list(0,0.7)),
+        text = ~paste('', language_value, ' répondants'),
+        showlegend = TRUE) %>%
+  layout(
+         margin=list(autoexpand=TRUE))
+p
+```
+
+## Participation à titre personnel ou pour l'unité de recherche
+
+Les trois quarts des répondants ont rempli le questionnaire à titre personnel.
+
+```{r perso}
+
+perso_name <- c(
+"A titre personnel",
+"Pour l'unité de recherche\n dans son ensemble")
+
+perso_value<-c(sum(mydata$Vous.répondez.à.ce.questionnaire..=="A titre personnel"),
+sum(mydata$Vous.répondez.à.ce.questionnaire..=="Pour votre unité de recherche dans son ensemble")
+)                                                                        
+            
+perso_data <- data.frame(perso_name, perso_value)
+
+colors <- c("rgb(100,149,237)","rgb(220,20,60)")
+
+p <- plot_ly(perso_data, labels = perso_name, values = perso_value, 
+        type = 'pie',
+        sort=FALSE,
+        direction='clockwise',
+        
+        textposition = 'outside',
+        textinfo = 'label+percent',
+        #insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+        domain=list(x=list(0.2,0.7),y=list(0,0.7)),
+        text = ~paste('', perso_value, ' répondants'),
+        showlegend = TRUE) %>%
+  layout(
+         margin=list(autoexpand=TRUE))
+p
+```
+
+# Evaluation de la marge d'erreur
+
+Les marges d'erreur sont évaluées à l'aide d'une formule de correction dans les conditions d'une population finie comme suit:
+
+$e = Z_{\alpha} \sqrt{\frac{p (1-p)}{n}} \sqrt{\frac{(N-n)}{(N-1)}}$
+
+où 
+
+- $Z_{\alpha}=1.96$ : pour un seuil de confiance de 95% (loi normale)
+
+-   p=0.5 : proportion de personnes ayant le comportement étudié (erreur max pour p=0.5)
+   
+-  n=`r number_eq_responses` : la taille de l’échantillon
+   
+-	 N=`r number_tot_researchers` : la taille de la population
+
+```{r marge_erreur}
+error_max <- 1.96 * sqrt((0.5 * 0.5)/number_eq_responses * sqrt ((number_tot_researchers - number_eq_responses)/(number_tot_researchers - 1)))
+```
+Sur base de ces données, la marge d’erreur maximale est évaluée à `r format(error_max*100, digits=2)` %.
+
+
+# Résultats de l'enquête
+
+Cette section décrit et commente les résultats obtenus pour chacune des questions de l'enquête.
+
+## Types de données de recherche et formats
+
+### Quels types de contenu numérique créez-vous lorsque vous générez des données de recherche ?
+
+En majorité, les répondants produisent :
+
+- des documents textuels non structurés
+- des graphiques et images
+- des feuilles de calcul
+- des données de configuration
+
+
+![Tip](./warning-98596_640.png) On notera que seule une minorité de répondants produisent des données de recherche dans des formats binaires propriétaires susceptibles de poser des problèmes quant à leur réutilisabilité et leur préservation.
+
+![Tip](./warning-98596_640.png) Les différents types de contenu numérique créés par les répondants de l'ULB correspondent à ceux indiqués dans l'étude autrichienne de référence
+
+```{r content, fig.width = 8, fig.height = 8}
+
+content_name <- c("Documents textuels non structurés (doc, odf, pdf, txt…)",
+"Documents textuels structurés (html, json, tex, xml)",
+"Feuilles de calcul (xls, ods, csv, sas, stata, spss…)",
+"Graphiques, images (jpeg, svg, png, gif, tiff…)",
+"Audio (mp3, wav, aiff, ogg…)",
+"Video (mpeg, avi, wmv, mp4…)",
+"Bases de données (MS Access, MySQL, Oracle…)",
+"Code source de logiciel (C, java, python, C++, R...)",
+"Données de configuration (ini, conf...)",
+"Autre",
+"Format propriétaire binaire")
+
+content_count <- c (sum(expanded_data$Quels.types.de.contenu.numérique.créez.vous.lorsque.vous.générez.des.données.de.recherche....Documents.textuels.non.structurés..doc..odf..pdf..txt...=="Oui"),
+  sum(expanded_data$Quels.types.de.contenu.numérique.créez.vous.lorsque.vous.générez.des.données.de.recherche....Documents.textuels.structurés..html..json..tex..xml...=="Oui"),
+  sum(expanded_data$Quels.types.de.contenu.numérique.créez.vous.lorsque.vous.générez.des.données.de.recherche....Feuilles.de.calcul..xls..ods..csv..sas..stata..spss...=="Oui"),
+  sum(expanded_data$Quels.types.de.contenu.numérique.créez.vous.lorsque.vous.générez.des.données.de.recherche....Graphiques..images..jpeg..svg..png..gif..tiff...=="Oui"),
+  sum(expanded_data$Quels.types.de.contenu.numérique.créez.vous.lorsque.vous.générez.des.données.de.recherche....Audio..mp3..wav..aiff..ogg...=="Oui"),
+  sum(expanded_data$Quels.types.de.contenu.numérique.créez.vous.lorsque.vous.générez.des.données.de.recherche....Video..mpeg..avi..wmv..mp4...=="Oui"),
+  sum(expanded_data$Quels.types.de.contenu.numérique.créez.vous.lorsque.vous.générez.des.données.de.recherche....Bases.de.données..MS.Access..MySQL..Oracle...=="Oui"),
+  sum(expanded_data$Quels.types.de.contenu.numérique.créez.vous.lorsque.vous.générez.des.données.de.recherche....Données.de.configuration..ini..conf.....=="Oui"),
+  sum(expanded_data$Quels.types.de.contenu.numérique.créez.vous.lorsque.vous.générez.des.données.de.recherche....Code.source.de.logiciel..C..java..python..C....R.....=="Oui"),
+  sum(expanded_data$Quels.types.de.contenu.numérique.créez.vous.lorsque.vous.générez.des.données.de.recherche....Format.propriétaire.binaire.=="Oui"),
+  sum(expanded_data$Quels.types.de.contenu.numérique.créez.vous.lorsque.vous.générez.des.données.de.recherche....Autre.!= ""))
+
+content_data <- data.frame(content_name, content_count)
+content_data$percentage <- content_data$content_count/number_eq_responses*100
+content_data<-content_data[with(content_data, order(content_data$percentage)),]
+
+trace_content <- list(
+  x =content_data$percentage, 
+  y =content_data$content_name, 
+  error_x= list(
+        type='percent',
+        value=5,
+        color='#85144B',
+        thickness=1.5,
+        width=3,
+        opacity=1
+    ),
+  marker = list(color= brewer.pal(11, "Spectral")),
+  name = "Type de contenu", 
+  opacity = 1, 
+  orientation = "h", 
+  type = "bar", 
+  uid = "6a5b81"
+)
+
+#layout$annotations$text <- fac_total$percentage
+#layout$title <- "Type de contenu généré" 
+layout$xaxis$title <- "Usage en pourcent"
+layout$yaxis$categoryarray <- content_data$content_name
+layout$yaxis$categoryorder <- "array"
+
+p <- plot_ly()
+p <- add_trace(p, x=trace_content$x, y=trace_content$y, error_x=trace_content$error_x, marker=trace_content$marker, name=trace_content$name, opacity=trace_content$opacity, orientation=trace_content$orientation, type=trace_content$type, uid=trace1$uid)
+
+p <- layout(p, annotations=layout$annotations, autosize=layout$autosize, bargap=layout$bargap, barmode=layout$barmode, dragmode=layout$dragmode, font=layout$font, height=layout$height, hidesources=layout$hidesources, hovermode=layout$hovermode, margin=layout$margin, paper_bgcolor=layout$paper_bgcolor, plot_bgcolor=layout$plot_bgcolor, separators=layout$separators, showlegend=layout$showlegend, title=layout$title, titlefont=layout$titlefont, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis)
+p
+
+
+```
+
+## Gestion quotidienne des données de recherche
+
+### Quelle quantité de données générez-vous approximativement chaque année ?
+
+La quantité de données générées annuellement est évaluée par le répondant soit :
+
+- à titre personnel 
+
+- pour l'unité de recherche dans sa globalité
+
+Dans le second cas, on évalue alors comme équivalent-réponse, une moyenne par chercheur.
+
+On constate que les répondants génèrent en majorité :
+
+- moins de 50 GB de données par an
+
+- entre 1 TB et 100 TB
+
+![Tip](./warning-98596_640.png) Cette distribution s'explique peut-être par un biais de l'échantillon qui amènerait les chercheurs générant beaucoup de données à répondre plus fréquemment à l'enquête, se sentant plus concernés par la problématique de la gestion des données de la recherche.
+
+![Tip](./warning-98596_640.png) Le pourcentage de répondants générant plus d'1 TB de données par an est  plus important que dans l'étude autrichienne de référence (30% contre 7%)
+
+```{r quantite, fig.width = 8, fig.height = 8}
+
+quantite_name <- c("Moins de 50 GB",
+"entre 50 GB et 100 GB",
+"entre 100 GB et 1 TB",
+"entre 1 TB et 100 TB",
+"entre 100 TB et 1 PB",
+"plus d'1PB",
+"Je ne sais pas")
+
+quantite_count <- c (sum(expanded_data$Quantité.données.max <= 50 & expanded_data$Quantité.données.max > 0),
+                     sum(expanded_data$Quantité.données.max <= 100 & expanded_data$Quantité.données.max > 50),
+                     sum(expanded_data$Quantité.données.max <= 1000
+                          & expanded_data$Quantité.données.max > 100),
+                     sum(expanded_data$Quantité.données.max <= 100000  & expanded_data$Quantité.données.max > 1000),
+                     sum(expanded_data$Quantité.données.max <= 1000000 & expanded_data$Quantité.données.max > 100000),
+                     sum(expanded_data$Quantité.données.max > 1000000),
+                     sum(expanded_data$Quantité.données.max == 0)
+  )
+
+quantite_data <- data.frame(quantite_name, quantite_count)
+quantite_data$percentage <- quantite_data$quantite_count/number_eq_responses*100
+#quantite_data<-quantite_data[with(quantite_data, order(quantite_data$percentage)),]
+
+trace_quantite <- list(
+  x =quantite_data$percentage, 
+  y =quantite_data$quantite_name, 
+  error_x= list(
+        type='percent',
+        value=5,
+        color='#85144B',
+        thickness=1.5,
+        width=3,
+        opacity=1
+    ),
+  marker = list(color= brewer.pal(7, "Spectral")),
+  name = "Quantité de données générées par an", 
+  opacity = 1, 
+  orientation = "v", 
+  type = "bar", 
+  uid = "6a5b81"
+)
+
+#layout$title <- "Quantité de données générées par an" 
+layout$xaxis$title <- "Pourcentage de répondants"
+layout$yaxis$categoryarray <- quantite_data$quantite_name
+layout$yaxis$categoryorder <- "array"
+
+p <- plot_ly()
+p <- add_trace(p, x=trace_quantite$x, y=trace_quantite$y, error_x=trace_quantite$error_x , marker=trace_quantite$marker, name=trace_quantite$name, opacity=trace_quantite$opacity, orientation=trace_quantite$orientation, type=trace_quantite$type, uid=trace_quantite$uid)
+
+p <- layout(p, annotations=layout$annotations, autosize=layout$autosize, bargap=layout$bargap, barmode=layout$barmode, dragmode=layout$dragmode, font=layout$font, height=layout$height, hidesources=layout$hidesources, hovermode=layout$hovermode, margin=layout$margin, paper_bgcolor=layout$paper_bgcolor, plot_bgcolor=layout$plot_bgcolor, separators=layout$separators, showlegend=layout$showlegend, title=layout$title, titlefont=layout$titlefont, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis)
+p
+```
+
+
+Comme explicité dans le graphique ci-dessous, on notera que près de 49% des répondants génèrent moins de 100 GB par an.
+
+```{r moinsde100GB }
+
+moinsde100GB_name <- c("Moins de 100 GB /an",
+                    "Plus de 100 GB /an",
+                    "Je ne sais pas")
+
+moinsde100GB_acces<-c(sum(expanded_data$Quantité.données.max <= 100 & expanded_data$Quantité.données.max > 0), sum(expanded_data$Quantité.données.max > 100), sum(expanded_data$Quantité.données.max == 0))
+                  
+moinsde100GB_acces_data <- data.frame(moinsde100GB_name,moinsde100GB_acces)
+
+colors <- c("rgb(116,140,65)", "rgb(215,228,189)", "rgb(234,241,222)")
+
+p <- plot_ly(moinsde100GB_acces_data, labels = moinsde100GB_name, values = moinsde100GB_acces, 
+        type = 'pie',
+        textposition = 'outside',
+        textinfo = 'label+percent',
+        sort=FALSE,
+        direction='clockwise',
+        #insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        domain=list(x=list(0.2,0.7),y=list(0,0.7)),
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+        text = ~paste('', moinsde100GB_acces, ' répondants'),
+        showlegend = TRUE) %>%
+  layout(#title = 'Proportion de répondants générant plus et moins de 100 GB par an',
+         #autosize = TRUE,
+         margin=list(autoexpand=TRUE))
+p
+```
+
+
+### Où stockez-vous habituellement vos données de recherche ?
+
+Une majorité de répondants stocke habituellement leurs données de recherche sur :
+
+- leur PC
+
+- un service cloud (Dropbox, Amazon, Google, Microsoft)
+
+- un disque dur externe ou une clé USB
+
+- un serveur dédié géré par leur unité de recherche
+
+![Tip](./warning-98596_640.png) L'usage de périphériques de stockage  externe est largement répandu. Ce type de stockage ne constitue pas une solution particulièrement robuste et fiable. 
+
+![Tip](./warning-98596_640.png) L'usage des services cloud est nettement plus répandu pour les répondants de l'ULB que dans l'étude autrichienne de référence (58% contre 21%)
+
+```{r storage, fig.width = 8, fig.height = 8}
+
+storage_name <- c("Localement sur votre PC",
+"Sur un disque dur externe ou clé USB personnel",
+"Sur un service cloud  (Dropbox, Amazon, Google, Microsoft...)",
+"Sur un serveur dédié géré par votre unité de recherche/institut",
+"Sur ownCloud de l’ULB",
+"Sur CD, DVD ou Blu-Ray",
+"Autre",
+"Dans un data center extérieur à l'ULB",
+"Au centre de calcul (Nestor)",
+"Sur Microsoft OneDrive de l’ULB")
+
+storage_count <- c (sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Localement.sur.votre.PC. =="Oui"),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.un.disque.dur.externe.ou.clé.USB.personnel.=="Oui"),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.un.service.cloud...Dropbox..Amazon..Google..Microsoft.....=="Oui"),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.un.serveur.dédié.géré.par.votre.unité.de.recherche.institut.=="Oui"),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.ownCloud.de.l.ULB.=="Oui"),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.CD..DVD.ou.Blu.Ray.=="Oui"),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Autre.!=""),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Dans.un.data.center.extérieur.à.l.ULB.=="Oui"),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Au.centre.de.calcul..Nestor..=="Oui"),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.Microsoft.OneDrive.de.l.ULB.=="Oui"))
+
+storage_data <- data.frame(storage_name, storage_count)
+storage_data$percentage <- storage_data$storage_count/number_eq_responses*100
+storage_data<-storage_data[with(storage_data, order(storage_data$percentage)),]
+
+trace_storage <- list(
+  x =storage_data$percentage, 
+  y =storage_data$storage_name, 
+  error_x= list(
+        type='percent',
+        value=5,
+        color='#85144B',
+        thickness=1.5,
+        width=3,
+        opacity=1
+    ),
+  marker = list(color= brewer.pal(11, "Spectral")),
+  name = "Type de contenu", 
+  opacity = 1, 
+  orientation = "v", 
+  type = "bar", 
+  uid = "6a5b81"
+)
+
+#layout$title <- "Type de stockage utilisé" 
+layout$xaxis$title <- "Usage en pourcent"
+layout$yaxis$categoryarray <- storage_data$storage_name
+layout$yaxis$categoryorder <- "array"
+
+p <- plot_ly()
+p <- add_trace(p, x=trace_storage$x, y=trace_storage$y, error_x=trace_storage$error_x , marker=trace_storage$marker, name=trace_storage$name, opacity=trace_storage$opacity, orientation=trace_storage$orientation, type=trace_storage$type, uid=trace_storage$uid)
+
+p <- layout(p, annotations=layout$annotations, autosize=layout$autosize, bargap=layout$bargap, barmode=layout$barmode, dragmode=layout$dragmode, font=layout$font, height=layout$height, hidesources=layout$hidesources, hovermode=layout$hovermode, margin=layout$margin, paper_bgcolor=layout$paper_bgcolor, plot_bgcolor=layout$plot_bgcolor, separators=layout$separators, showlegend=layout$showlegend, title=layout$title, titlefont=layout$titlefont, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis)
+p
+```
+
+
+### Quel moyen de stockage utilisent les répondants qui génèrent moins de 100GB par an ?
+
+On observe que les répondants qui génèrent **moins de 100 GB** par an stockent leur données principalement sur leur PC, sur un service cloud ou un disque dur externe ou une clé USB.
+
+![Tip](./warning-98596_640.png) Proposer une solution de stockage professionnelle apparaît comme essentiel pour les répondants qui génèrent moins de 100GB par an.
+
+```{r storage_less_than_100_GB, fig.width = 8, fig.height = 8}
+
+storage_name <- c("Localement sur votre PC",
+"Sur un disque dur externe ou clé USB personnel",
+"Sur un service cloud  (Dropbox, Amazon, Google, Microsoft...)",
+"Sur un serveur dédié géré par votre unité de recherche/institut",
+"Sur ownCloud de l’ULB",
+"Sur CD, DVD ou Blu-Ray",
+"Autre",
+"Dans un data center extérieur à l'ULB",
+"Au centre de calcul (Nestor)",
+"Sur Microsoft OneDrive de l’ULB")
+
+storage_count <- c (sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Localement.sur.votre.PC. =="Oui" & expanded_data$Quantité.données.max <= 100),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.un.disque.dur.externe.ou.clé.USB.personnel.=="Oui"& expanded_data$Quantité.données.max <= 100),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.un.service.cloud...Dropbox..Amazon..Google..Microsoft.....=="Oui"& expanded_data$Quantité.données.max <= 100),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.un.serveur.dédié.géré.par.votre.unité.de.recherche.institut.=="Oui"& expanded_data$Quantité.données.max <= 100),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.ownCloud.de.l.ULB.=="Oui"& expanded_data$Quantité.données.max <= 100),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.CD..DVD.ou.Blu.Ray.=="Oui"& expanded_data$Quantité.données.max <= 100),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Autre.!=""& expanded_data$Quantité.données.max <= 100),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Dans.un.data.center.extérieur.à.l.ULB.=="Oui"& expanded_data$Quantité.données.max <= 100),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Au.centre.de.calcul..Nestor..=="Oui"& expanded_data$Quantité.données.max <= 100),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.Microsoft.OneDrive.de.l.ULB.=="Oui"& expanded_data$Quantité.données.max <= 100))
+
+number_less_100 = sum(expanded_data$Quantité.données.max <= 100)
+
+storage_data <- data.frame(storage_name, storage_count)
+storage_data$percentage <- storage_data$storage_count/number_less_100*100
+storage_data<-storage_data[with(storage_data, order(storage_data$percentage)),]
+
+trace_storage <- list(
+  x =storage_data$percentage, 
+  y =storage_data$storage_name, 
+  error_x= list(
+        type='percent',
+        value=5,
+        color='#85144B',
+        thickness=1.5,
+        width=3,
+        opacity=1
+    ),
+  marker = list(color= brewer.pal(11, "Spectral")),
+  name = "Type de contenu", 
+  opacity = 1, 
+  orientation = "v", 
+  type = "bar", 
+  uid = "6a5b81"
+)
+
+#layout$title <- "Type de stockage utilisé" 
+layout$xaxis$title <- "Usage en pourcent"
+layout$yaxis$categoryarray <- storage_data$storage_name
+layout$yaxis$categoryorder <- "array"
+
+p <- plot_ly()
+p <- add_trace(p, x=trace_storage$x, y=trace_storage$y, error_x=trace_storage$error_x , marker=trace_storage$marker, name=trace_storage$name, opacity=trace_storage$opacity, orientation=trace_storage$orientation, type=trace_storage$type, uid=trace_storage$uid)
+
+p <- layout(p, annotations=layout$annotations, autosize=layout$autosize, bargap=layout$bargap, barmode=layout$barmode, dragmode=layout$dragmode, font=layout$font, height=layout$height, hidesources=layout$hidesources, hovermode=layout$hovermode, margin=layout$margin, paper_bgcolor=layout$paper_bgcolor, plot_bgcolor=layout$plot_bgcolor, separators=layout$separators, showlegend=layout$showlegend, title=layout$title, titlefont=layout$titlefont, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis)
+p
+```
+
+### Quel moyen de stockage utilisent les répondants qui génèrent plus de 100GB par an?
+
+On observe que les répondants qui génèrent **plus de 100 GB** par an stockent leur données principalement sur leur PC, sur un serveur dédié géré par leur unité de recherche ou à l'aide d'un service cloud.
+
+![Tip](./warning-98596_640.png) Les répondants qui génèrent plus de 100GB par an se tournent donc vers des solutions de stockage plus robustes.
+
+```{r storage_more_than_100_GB, fig.width = 8, fig.height = 8}
+
+storage_name <- c("Localement sur votre PC",
+"Sur un disque dur externe ou clé USB personnel",
+"Sur un service cloud  (Dropbox, Amazon, Google, Microsoft...)",
+"Sur un serveur dédié géré par votre unité de recherche/institut",
+"Sur ownCloud de l’ULB",
+"Sur CD, DVD ou Blu-Ray",
+"Autre",
+"Dans un data center extérieur à l'ULB",
+"Au centre de calcul (Nestor)",
+"Sur Microsoft OneDrive de l’ULB")
+
+storage_count <- c (sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Localement.sur.votre.PC. =="Oui" & expanded_data$Quantité.données.max > 100),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.un.disque.dur.externe.ou.clé.USB.personnel.=="Oui"& expanded_data$Quantité.données.max > 100),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.un.service.cloud...Dropbox..Amazon..Google..Microsoft.....=="Oui"& expanded_data$Quantité.données.max > 100),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.un.serveur.dédié.géré.par.votre.unité.de.recherche.institut.=="Oui"& expanded_data$Quantité.données.max > 100),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.ownCloud.de.l.ULB.=="Oui"& expanded_data$Quantité.données.max > 100),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.CD..DVD.ou.Blu.Ray.=="Oui"& expanded_data$Quantité.données.max > 100),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Autre.!=""& expanded_data$Quantité.données.max > 100),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Dans.un.data.center.extérieur.à.l.ULB.=="Oui"& expanded_data$Quantité.données.max > 100),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Au.centre.de.calcul..Nestor..=="Oui"& expanded_data$Quantité.données.max > 100),
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.Microsoft.OneDrive.de.l.ULB.=="Oui"& expanded_data$Quantité.données.max > 100))
+
+number_more_100 = sum(expanded_data$Quantité.données.max > 100)
+storage_data <- data.frame(storage_name, storage_count)
+storage_data$percentage <- storage_data$storage_count/number_more_100*100
+storage_data<-storage_data[with(storage_data, order(storage_data$percentage)),]
+
+trace_storage <- list(
+  x =storage_data$percentage, 
+  y =storage_data$storage_name, 
+  error_x= list(
+        type='percent',
+        value=5,
+        color='#85144B',
+        thickness=1.5,
+        width=3,
+        opacity=1
+    ),
+  marker = list(color= brewer.pal(11, "Spectral")),
+  name = "Type de contenu", 
+  opacity = 1, 
+  orientation = "v", 
+  type = "bar", 
+  uid = "6a5b81"
+)
+
+#layout$title <- "Type de stockage utilisé" 
+layout$xaxis$title <- "Usage en pourcent"
+layout$yaxis$categoryarray <- storage_data$storage_name
+layout$yaxis$categoryorder <- "array"
+
+p <- plot_ly()
+p <- add_trace(p, x=trace_storage$x, y=trace_storage$y, error_x=trace_storage$error_x , marker=trace_storage$marker, name=trace_storage$name, opacity=trace_storage$opacity, orientation=trace_storage$orientation, type=trace_storage$type, uid=trace_storage$uid)
+
+p <- layout(p, annotations=layout$annotations, autosize=layout$autosize, bargap=layout$bargap, barmode=layout$barmode, dragmode=layout$dragmode, font=layout$font, height=layout$height, hidesources=layout$hidesources, hovermode=layout$hovermode, margin=layout$margin, paper_bgcolor=layout$paper_bgcolor, plot_bgcolor=layout$plot_bgcolor, separators=layout$separators, showlegend=layout$showlegend, title=layout$title, titlefont=layout$titlefont, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis)
+p
+```
+
+### Quelle proportion de répondants utilise conjointement deux moyens de stockage ?
+
+La carte thermique ci-dessous indique la corrélation entre l'utilisation d'un moyen de stockage autre que le PC local et l'utilisation d'un autre moyen de stockage.
+
+```{r heatmap_storage}
+
+mix_storage_name <- c("HDD", "Cloud", "Serveur dédié", "ownCloud", "DVD", "Autre","Data Center ext.", "SISC ULB/VUB", "oneDrive")
+  
+mix_storage_data <- data.frame(
+                                HDD= expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.un.disque.dur.externe.ou.clé.USB.personnel.,
+                               Cloud =  expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.un.service.cloud...Dropbox..Amazon..Google..Microsoft.....,
+                               Serveur.Dédié =
+expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.un.serveur.dédié.géré.par.votre.unité.de.recherche.institut.,
+ownCloud = expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.ownCloud.de.l.ULB.,
+CD.DVD = expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.CD..DVD.ou.Blu.Ray.,
+Autre = expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Autre.,
+Data.Center.Externe=expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Dans.un.data.center.extérieur.à.l.ULB.,
+Centre.de.Calcul=expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Au.centre.de.calcul..Nestor..,
+Onedrive=expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.Microsoft.OneDrive.de.l.ULB.)
+
+mix_storage <- matrix(nrow=9,ncol=9,
+    c (                          
+      NA,
+      sum(mix_storage_data$HDD=="Oui" & mix_storage_data$Cloud=="Oui"),
+      sum(mix_storage_data$HDD=="Oui" & mix_storage_data$Serveur.Dédié=="Oui"),            
+      sum(mix_storage_data$HDD=="Oui" & mix_storage_data$ownCloud=="Oui"),
+      sum(mix_storage_data$HDD=="Oui" & mix_storage_data$CD.DVD=="Oui"),
+      sum(mix_storage_data$HDD=="Oui" & mix_storage_data$Autre=="Oui"),
+      sum(mix_storage_data$HDD=="Oui" & mix_storage_data$Data.Center.Externe=="Oui"),
+      sum(mix_storage_data$HDD=="Oui" & mix_storage_data$Centre.de.Calcul=="Oui"),
+      sum(mix_storage_data$HDD=="Oui" & mix_storage_data$Onedrive=="Oui"),
+       
+      sum(mix_storage_data$Cloud=="Oui" & mix_storage_data$HDD=="Oui"),
+      NA,
+      sum(mix_storage_data$Cloud=="Oui" & mix_storage_data$Serveur.Dédié=="Oui"),        
+      sum(mix_storage_data$Cloud=="Oui" & mix_storage_data$ownCloud=="Oui"),
+      sum(mix_storage_data$Cloud=="Oui" & mix_storage_data$CD.DVD=="Oui"),
+      sum(mix_storage_data$Cloud=="Oui" & mix_storage_data$Autre=="Oui"),
+      sum(mix_storage_data$Cloud=="Oui" & mix_storage_data$Data.Center.Externe=="Oui"),
+      sum(mix_storage_data$Cloud=="Oui" & mix_storage_data$Centre.de.Calcul=="Oui"),
+      sum(mix_storage_data$Cloud=="Oui" & mix_storage_data$Onedrive=="Oui"),
+       
+      sum(mix_storage_data$Serveur.Dédié=="Oui" & mix_storage_data$HDD=="Oui"),
+      sum(mix_storage_data$Serveur.Dédié=="Oui" & mix_storage_data$Cloud=="Oui"),
+      NA,
+      sum(mix_storage_data$Serveur.Dédié=="Oui" & mix_storage_data$ownCloud=="Oui"),
+      sum(mix_storage_data$Serveur.Dédié=="Oui" & mix_storage_data$CD.DVD=="Oui"),
+      sum(mix_storage_data$Serveur.Dédié=="Oui" & mix_storage_data$Autre=="Oui"),
+      sum(mix_storage_data$Serveur.Dédié=="Oui" & mix_storage_data$Data.Center.Externe=="Oui"),
+      sum(mix_storage_data$Serveur.Dédié=="Oui" & mix_storage_data$Centre.de.Calcul=="Oui"),
+      sum(mix_storage_data$Serveur.Dédié=="Oui" & mix_storage_data$Onedrive=="Oui"),
+      
+      sum(mix_storage_data$ownCloud=="Oui" & mix_storage_data$HDD=="Oui"),
+      sum(mix_storage_data$ownCloud=="Oui" & mix_storage_data$Cloud=="Oui"),
+      sum(mix_storage_data$ownCloud=="Oui" & mix_storage_data$Serveur.Dédié=="Oui"),
+      NA,
+      sum(mix_storage_data$ownCloud=="Oui" & mix_storage_data$CD.DVD=="Oui"),
+      sum(mix_storage_data$ownCloud=="Oui" & mix_storage_data$Autre=="Oui"),
+      sum(mix_storage_data$ownCloud=="Oui" & mix_storage_data$Data.Center.Externe=="Oui"),
+      sum(mix_storage_data$ownCloud=="Oui" & mix_storage_data$Centre.de.Calcul=="Oui"),
+      sum(mix_storage_data$ownCloud=="Oui" & mix_storage_data$Onedrive=="Oui"),
+      
+      sum(mix_storage_data$CD.DVD=="Oui" & mix_storage_data$HDD=="Oui"),
+      sum(mix_storage_data$CD.DVD=="Oui" & mix_storage_data$Cloud=="Oui"),
+      sum(mix_storage_data$CD.DVD=="Oui" & mix_storage_data$Serveur.Dédié=="Oui"),
+      sum(mix_storage_data$CD.DVD=="Oui" & mix_storage_data$ownCloud=="Oui"),
+      NA,
+      sum(mix_storage_data$CD.DVD=="Oui" & mix_storage_data$Autre=="Oui"),
+      sum(mix_storage_data$CD.DVD=="Oui" & mix_storage_data$Data.Center.Externe=="Oui"),
+      sum(mix_storage_data$CD.DVD=="Oui" & mix_storage_data$Centre.de.Calcul=="Oui"),
+      sum(mix_storage_data$CD.DVD=="Oui" & mix_storage_data$Onedrive=="Oui"),
+      
+      sum(mix_storage_data$Autre=="Oui" & mix_storage_data$HDD=="Oui"),
+      sum(mix_storage_data$Autre=="Oui" & mix_storage_data$Cloud=="Oui"),
+      sum(mix_storage_data$Autre=="Oui" & mix_storage_data$Serveur.Dédié=="Oui"),
+      sum(mix_storage_data$Autre=="Oui" & mix_storage_data$ownCloud=="Oui"),
+      sum(mix_storage_data$Autre=="Oui" & mix_storage_data$CD.DVD=="Oui"),
+      NA,
+      sum(mix_storage_data$Autre=="Oui" & mix_storage_data$Data.Center.Externe=="Oui"),
+      sum(mix_storage_data$Autre=="Oui" & mix_storage_data$Centre.de.Calcul=="Oui"),
+      sum(mix_storage_data$Autre=="Oui" & mix_storage_data$Onedrive=="Oui"),
+      
+      sum(mix_storage_data$Data.Center.Externe=="Oui" & mix_storage_data$HDD=="Oui"),
+      sum(mix_storage_data$Data.Center.Externe=="Oui" & mix_storage_data$Cloud=="Oui"),
+      sum(mix_storage_data$Data.Center.Externe=="Oui" & mix_storage_data$Serveur.Dédié=="Oui"),
+      sum(mix_storage_data$Data.Center.Externe=="Oui" & mix_storage_data$ownCloud=="Oui"),
+      sum(mix_storage_data$Data.Center.Externe=="Oui" & mix_storage_data$CD.DVD=="Oui"),
+      sum(mix_storage_data$Data.Center.Externe=="Oui" & mix_storage_data$Autre=="Oui"),
+      NA,
+      sum(mix_storage_data$Data.Center.Externe=="Oui" & mix_storage_data$Centre.de.Calcul=="Oui"),
+      sum(mix_storage_data$Data.Center.Externe=="Oui" & mix_storage_data$Onedrive=="Oui"),
+      
+      sum(mix_storage_data$Centre.de.Calcul=="Oui" & mix_storage_data$HDD=="Oui"),
+      sum(mix_storage_data$Centre.de.Calcul=="Oui" & mix_storage_data$Cloud=="Oui"),
+      sum(mix_storage_data$Centre.de.Calcul=="Oui" & mix_storage_data$Serveur.Dédié=="Oui"),
+      sum(mix_storage_data$Centre.de.Calcul=="Oui" & mix_storage_data$ownCloud=="Oui"),
+      sum(mix_storage_data$Centre.de.Calcul=="Oui" & mix_storage_data$CD.DVD=="Oui"),
+      sum(mix_storage_data$Centre.de.Calcul=="Oui" & mix_storage_data$Autre=="Oui"),
+      sum(mix_storage_data$Centre.de.Calcul=="Oui" & mix_storage_data$Data.Center.Externe=="Oui"),
+      NA,
+      sum(mix_storage_data$Centre.de.Calcul=="Oui" & mix_storage_data$Onedrive=="Oui"),
+      
+      sum(mix_storage_data$Onedrive=="Oui" & mix_storage_data$HDD=="Oui"),
+      sum(mix_storage_data$Onedrive=="Oui" & mix_storage_data$Cloud=="Oui"),
+      sum(mix_storage_data$Onedrive=="Oui" & mix_storage_data$Serveur.Dédié=="Oui"),
+      sum(mix_storage_data$Onedrive=="Oui" & mix_storage_data$ownCloud=="Oui"),
+      sum(mix_storage_data$Onedrive=="Oui" & mix_storage_data$CD.DVD=="Oui"),
+      sum(mix_storage_data$Onedrive=="Oui" & mix_storage_data$Autre=="Oui"),
+      sum(mix_storage_data$Onedrive=="Oui" & mix_storage_data$Data.Center.Externe=="Oui"),
+      sum(mix_storage_data$Onedrive=="Oui" & mix_storage_data$Centre.de.Calcul=="Oui"),
+      NA
+      
+       )
+    )
+
+m <- list(
+  l = 100,
+  r = 50,
+  b = 100,
+  t = 100,
+  pad = 4
+)
+
+p <- plot_ly(
+     x = mix_storage_name, y = mix_storage_name,
+     z = mix_storage, colorscale = "Blues", type = "heatmap") %>%
+  layout(margin = m)
+
+ p
+```
+
+### A quelle fréquence accédez-vous à ces données générées (en lecture ou écriture) ?
+
+Une large majorité de répondants accède à leurs données générées très fréquemment ou fréquemment.
+
+![Tip](./warning-98596_640.png) Ce résultat impacte le choix de l'infrastructure de stockage à proposer aux chercheurs.
+
+```{r frequence }
+
+frequence_name <- c("Très fréquemment\n (plusieurs fois par jour)",
+                    "Fréquemment \n (plusieurs fois par semaine)",
+                    "Peu fréquemment \n (plusieurs fois par mois)",
+                     "Je ne sais pas")
+
+frequence_acces<-c(sum(expanded_data$A.quelle.fréquence.accédez.vous.à.ces.données.générées..en.lecture.ou.écriture...=="Très fréquemment (plusieurs fois par jour)"),
+                   sum(expanded_data$A.quelle.fréquence.accédez.vous.à.ces.données.générées..en.lecture.ou.écriture...=="Fréquemment (plusieurs fois par semaine)"),
+                   sum(expanded_data$A.quelle.fréquence.accédez.vous.à.ces.données.générées..en.lecture.ou.écriture...=="Peu fréquemment (plusieurs fois par mois)"),
+                   sum(expanded_data$A.quelle.fréquence.accédez.vous.à.ces.données.générées..en.lecture.ou.écriture...=="Je ne sais pas"))
+
+frequence_acces_data <- data.frame(frequence_name,frequence_acces)
+
+colors <- c("rgb(116,140,65)", "rgb(137,165,78)", "rgb(215,228,189)", "rgb(234,241,222)")
+
+p <- plot_ly(frequence_acces_data, labels = frequence_name, values = frequence_acces, 
+        type = 'pie',
+        textposition = 'outside',
+        textinfo = 'label+percent',
+        sort=FALSE,
+        direction='clockwise',
+        #insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        domain=list(x=list(0.2,0.7),y=list(0,0.7)),
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+        text = ~paste('', frequence_acces, ' répondants'),
+        showlegend = TRUE) %>%
+  layout(#title = 'A quelle fréquence accédez-vous à ces données générées ?',
+         #autosize = TRUE,
+         margin=list(autoexpand=TRUE))
+p
+```
+
+### Quel effort ou coût demanderait la régénération de vos données ?
+
+Une large majorité des répondants estime que leurs données ne peuvent être régénérées ou qu'un effort ou coût très important serait requis pour les regénérées.
+
+![Tip](./warning-98596_640.png) Ce résultat impacte le type et stratégie de sauvegarde et le niveau de réplication exigé pour la solution de stockage à proposer aux chercheurs.
+
+```{r effort }
+
+effort_name <- c(
+"Mes données sont uniques\n et ne peuvent pas être régénérées",
+"Très important",
+"Important",
+"Moyen",
+"Faible",
+"Je ne sais pas")
+
+effort_value<-c(sum(expanded_data$Quel.effort.ou.coût.demanderait.la.régénération.de.vos.données..=="Mes données sont uniques et ne peuvent pas être régénérées"),
+                   sum(expanded_data$Quel.effort.ou.coût.demanderait.la.régénération.de.vos.données..=="Très important"),
+                   sum(expanded_data$Quel.effort.ou.coût.demanderait.la.régénération.de.vos.données..=="Important"),
+                   sum(expanded_data$Quel.effort.ou.coût.demanderait.la.régénération.de.vos.données..=="Moyen"),
+                   sum(expanded_data$Quel.effort.ou.coût.demanderait.la.régénération.de.vos.données..=="Faible"),
+                   sum(expanded_data$Quel.effort.ou.coût.demanderait.la.régénération.de.vos.données..=="Je ne sais pas")
+                )
+
+effort_data <- data.frame(effort_name, effort_value)
+
+colors <- c("rgb(116,140,65)", "rgb(137,165,78)", "rgb(215,228,189)", "rgb(215,228,189)", "rgb(234,241,222)", "rgb(245,255,230)")
+
+p <- plot_ly(effort_data, labels = effort_name, values = effort_value, 
+        type = 'pie',
+        sort=FALSE,
+        direction='clockwise',
+        
+        textposition = 'outside',
+        textinfo = 'label+percent',
+        #insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+        domain=list(x=list(0.2,0.7),y=list(0,0.7)),
+        text = ~paste('', effort_value, ' répondants'),
+        showlegend = TRUE) %>%
+  layout(#title = 'Quel effort ou coût demanderait la régénération de vos données ?',
+         #autosize = TRUE,
+         margin=list(autoexpand=TRUE))
+p
+```
+
+
+### Documentez-vous habituellement vos données de recherche ?
+
+Une majorité de répondants indique documenter leurs données de recherche de manière personnalisée mais pas systématique.
+
+Seuls 16.5% des répondants indiquent documenter leurs données de recherche sur base de standard adaptés.
+
+![Tip](./warning-98596_640.png) Les résultats coïncident avec ceux de l'étude autrichienne de référence toutefois une proportion un peu plus importante de répondants de l'ULB ne documentent pas leurs données de manière systématique (59% contre 40%)
+
+
+```{r doc}
+
+doc_name <- c(
+"Oui, sur base de standards adaptés",
+"Oui, de manière personnalisée\n et systématique",
+"Oui, de manière personnalisée,\n mais pas systématique",
+"Non",
+"Autre",
+"Je ne sais pas"
+)
+
+doc_value<-c(sum(expanded_data$Documentez.vous.habituellement.vos.données.de.recherche..=="Oui, sur base de standards adaptés"),
+                   sum(expanded_data$Documentez.vous.habituellement.vos.données.de.recherche..=="Oui, de manière personnalisée et systématique"),
+                   sum(expanded_data$Documentez.vous.habituellement.vos.données.de.recherche..=="Oui, de manière personnalisée, mais pas systématique"),
+                   sum(expanded_data$Documentez.vous.habituellement.vos.données.de.recherche..=="Non"),
+                   sum(expanded_data$Documentez.vous.habituellement.vos.données.de.recherche..=="Autre"),
+                   sum(expanded_data$Documentez.vous.habituellement.vos.données.de.recherche..=="Je ne sais pas")
+                )
+
+doc_data <- data.frame(doc_name, doc_value)
+
+colors <- c("rgb(116,140,65)", "rgb(137,165,78)", "rgb(215,228,189)", "rgb(215,228,189)", "rgb(234,241,222)")
+
+p <- plot_ly(doc_data, labels = doc_name, values = doc_value, 
+        type = 'pie',
+        sort=FALSE,
+        direction='clockwise',
+        
+        textposition = 'outside',
+        textinfo = 'label+percent',
+        #insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+        domain=list(x=list(0.2,0.7),y=list(0,0.7)),
+        text = ~paste('', doc_value, ' répondants'),
+        showlegend = TRUE) %>%
+  layout(#title = 'Documentez-vous habituellement vos données de recherche ?',
+         #autosize = TRUE,
+         margin=list(autoexpand=TRUE))
+p
+```
+
+### Qui est responsable de la sauvegarde de vos données de recherche ?
+
+Une très large majorité de répondants estime être responsable personnellement de la sauvegarde de leurs données de recherche.
+
+![Tip](./warning-98596_640.png) Une proportion non négligeable d'unité de recherche confie la responsabilité de la sauvegarde de leurs données de recherche à un membre sur contrat temporaire.
+
+```{r reponsible, fig.width = 8, fig.height = 8}
+
+responsible_name <- c("Vous-même",
+"Un membre de votre équipe de recherche sur contrat à durée déterminée",
+"Un membre permanent de votre équipe de recherche",
+"Le gestionnaire du projet de recherche",
+"Autre",
+"Le centre de calcul de l'ULB",
+"Un fournisseur de service externe")
+
+responsible_count <- c (sum(expanded_data$Qui.est.responsable.de.la.sauvegarde.de.vos.données.de.recherche....plusieurs.réponses.possibles...Vous.même. =="Oui"),
+  sum(expanded_data$Qui.est.responsable.de.la.sauvegarde.de.vos.données.de.recherche....plusieurs.réponses.possibles...Un.membre.de.votre.équipe.de.recherche.sur.contrat.à.durée.déterminée.=="Oui"),
+  sum(expanded_data$Qui.est.responsable.de.la.sauvegarde.de.vos.données.de.recherche....plusieurs.réponses.possibles...Un.membre.permanent.de.votre.équipe.de.recherche.=="Oui"),
+  sum(expanded_data$Qui.est.responsable.de.la.sauvegarde.de.vos.données.de.recherche....plusieurs.réponses.possibles...Le.gestionnaire.du.projet.de.recherche.=="Oui"),
+  sum(expanded_data$Qui.est.responsable.de.la.sauvegarde.de.vos.données.de.recherche....plusieurs.réponses.possibles...Autre.!=""),
+  sum(expanded_data$Qui.est.responsable.de.la.sauvegarde.de.vos.données.de.recherche....plusieurs.réponses.possibles...Le.centre.de.calcul.de.l.ULB.=="Oui"),
+  sum(expanded_data$Qui.est.responsable.de.la.sauvegarde.de.vos.données.de.recherche....plusieurs.réponses.possibles...Un.fournisseur.de.service.externe.=="Oui"))
+
+responsible_data <- data.frame(responsible_name, responsible_count)
+responsible_data$percentage <- responsible_data$responsible_count/number_eq_responses*100
+responsible_data<-responsible_data[with(responsible_data, order(responsible_data$percentage)),]
+
+trace_responsible <- list(
+  x =responsible_data$percentage, 
+  y =responsible_data$responsible_name, 
+  error_x= list(
+        type='percent',
+        value=5,
+        color='#85144B',
+        thickness=1.5,
+        width=3,
+        opacity=1
+    ),
+  marker = list(color= brewer.pal(7, "Spectral")),
+  name = "Qui est responsable ? ", 
+  opacity = 1, 
+  orientation = "v", 
+  type = "bar", 
+  textinfo = 'label+percent',
+  uid = "6a5b81"
+)
+
+#layout$title <- "Qui est responsable de la sauvegarde de vos données de recherche ?" 
+layout$xaxis$title <- "Usage en pourcent"
+layout$yaxis$categoryarray <- responsible_data$responsible_name
+layout$yaxis$categoryorder <- "array"
+
+p <- plot_ly()
+p <- add_trace(p, x=trace_responsible$x, y=trace_responsible$y, error_x=trace_responsible$error_x , marker=trace_responsible$marker, name=trace_responsible$name, opacity=trace_responsible$opacity, orientation=trace_responsible$orientation, type=trace_responsible$type, uid=trace_responsible$uid)
+
+p <- layout(p, annotations=layout$annotations, autosize=layout$autosize, bargap=layout$bargap, barmode=layout$barmode, dragmode=layout$dragmode, font=layout$font, height=layout$height, hidesources=layout$hidesources, hovermode=layout$hovermode, margin=layout$margin, paper_bgcolor=layout$paper_bgcolor, plot_bgcolor=layout$plot_bgcolor, separators=layout$separators, showlegend=layout$showlegend, title=layout$title, titlefont=layout$titlefont, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis)
+p
+```
+
+### Avez-vous déjà subi une perte de données de recherche ?
+
+Plus de 46% des répondants ont déjà subi une perte de données de recherche.
+
+
+```{r perte }
+
+perte_name <- c(
+"Oui",
+"Non")
+
+perte_value<-c(sum(expanded_data$Avez.vous.déjà.subi.une.perte.de.données.de.recherche..=="Oui"),sum(expanded_data$Avez.vous.déjà.subi.une.perte.de.données.de.recherche..=="Non")
+                )
+
+perte_data <- data.frame(perte_name, perte_value)
+
+colors <- c("rgb(116,140,65)","rgb(234,241,222)")
+
+p <- plot_ly(perte_data, labels = perte_name, values = perte_value, 
+        type = 'pie',
+        sort=FALSE,
+        direction='clockwise',
+        
+        textposition = 'outside',
+        textinfo = 'label+percent',
+        #insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+        domain=list(x=list(0.2,0.7),y=list(0,0.7)),
+        text = ~paste('', perte_value, ' répondants'),
+        showlegend = TRUE) %>%
+  layout(
+    #title = 'Avez-vous déjà subi une perte de données de recherche ?',
+         #autosize = TRUE,
+         margin=list(autoexpand=TRUE))
+p
+```
+
+
+### Pour quelle raison avez-vous déjà subi une perte de données de recherche ?
+
+Les raisons principales de la perte de données indiquées par les répondants sont par ordre décroissant d'importance :
+
+- le départ d’un chercheur n’ayant pas laissé une copie de ses données au sein de l'unité de recherche
+
+- une erreur humaine (perte du media, erreur de manipulation)
+
+- un problème matériel de media de stockage
+
+![Tip](./warning-98596_640.png) Les raisons principales de la perte de données sont en grande partie liées à une l'utilisation d'une solution de stockage peu fiable.
+
+
+```{r raison_perte, fig.width = 8, fig.height = 8}
+
+raison_perte_name <- c(
+"problème de media de stockage (panne, obsolescence)",
+"départ d’un chercheur n’ayant pas laissé\n une copie de ses données",
+"erreur humaine (perte du media, erreur de manipulation)",
+"problème logiciel (format propriétaire illisible)",
+"documentation insuffisante des données",
+"Autre",
+"attaque informatique (virus, trojan…)")
+
+raison_perte_count <- c (sum(expanded_data$Quelle.est.la.raison.de.cette.perte.de.données.de.recherche....en.raison.d.un.problème.de.media.de.stockage..panne..obsolescence.. =="Oui"),
+  sum(expanded_data$Quelle.est.la.raison.de.cette.perte.de.données.de.recherche....en.raison.du.départ.d.un.chercheur.n.ayant.pas.laissé.une.copie.de.ses.données.disponibles.au.sein.de.votre.unité.=="Oui"),
+  sum(expanded_data$Quelle.est.la.raison.de.cette.perte.de.données.de.recherche....en.raison.d.une.erreur.humaine..perte.du.media..erreur.de.manipulation..=="Oui"),
+  sum(expanded_data$Quelle.est.la.raison.de.cette.perte.de.données.de.recherche....en.raison.d.un.problème.logiciel..format.propriétaire.illisible..=="Oui"),
+  sum(expanded_data$Quelle.est.la.raison.de.cette.perte.de.données.de.recherche....en.raison.d.une.documentation.insuffisante.des.données.=="Oui"),
+  sum(expanded_data$Quelle.est.la.raison.de.cette.perte.de.données.de.recherche....Autre.!=""),
+  sum(expanded_data$Quelle.est.la.raison.de.cette.perte.de.données.de.recherche....en.raison.d.une.attaque.informatique..virus..trojan...=="Oui"))
+
+raison_perte_data <- data.frame(raison_perte_name, raison_perte_count)
+
+number_reponses_perte <- sum(expanded_data$Avez.vous.déjà.subi.une.perte.de.données.de.recherche..=="Oui")
+  
+raison_perte_data$percentage <- raison_perte_data$raison_perte_count/number_reponses_perte*100
+raison_perte_data<-raison_perte_data[with(raison_perte_data, order(raison_perte_data$percentage)),]
+
+trace_perte_data <- list(
+  x =raison_perte_data$percentage, 
+  y =raison_perte_data$raison_perte_name, 
+  error_x= list(
+        type='percent',
+        value=5,
+        color='#85144B',
+        thickness=1.5,
+        width=3,
+        opacity=1
+    ),
+  marker = list(color= brewer.pal(7, "Spectral")),
+  name = "Raison de la perte de données", 
+  opacity = 1, 
+  orientation = "v", 
+  type = "bar", 
+  textinfo = 'label+percent',
+  uid = "6a5b81"
+)
+
+#layout$title <- "Pour quelle raison avez-vous déjà subi une perte de données de recherche ? " 
+layout$xaxis$title <- "Réponses en pourcent"
+layout$yaxis$categoryarray <- raison_perte_data$raison_perte_name
+layout$yaxis$categoryorder <- "array"
+
+p <- plot_ly()
+p <- add_trace(p, x=trace_perte_data$x, y=trace_perte_data$y, error_x=trace_perte_data$error_x , marker=trace_perte_data$marker, name=trace_perte_data$name, opacity=trace_perte_data$opacity, orientation=trace_perte_data$orientation, type=trace_perte_data$type, uid=trace_perte_data$uid)
+
+p <- layout(p, annotations=layout$annotations, autosize=layout$autosize, bargap=layout$bargap, barmode=layout$barmode, dragmode=layout$dragmode, font=layout$font, height=layout$height, hidesources=layout$hidesources, hovermode=layout$hovermode, margin=layout$margin, paper_bgcolor=layout$paper_bgcolor, plot_bgcolor=layout$plot_bgcolor, separators=layout$separators, showlegend=layout$showlegend, title=layout$title, titlefont=layout$titlefont, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis)
+p
+```
+
+## Aspects éthiques et légaux 
+
+### Utilisez-vous des données de recherche externes pour votre propre recherche (données qui ne sont pas générées par vous-même(s)) ?
+
+Une large majorité de répondants utilise des données de recherche externe, généralement après traitement.
+
+```{r donneesext }
+
+donneesext_name <- c(
+"Immédiatement sans traitement préalable",
+"Après un traitement minimal\n (compilation, nettoyage…)",
+"Après un traitement important",
+"Jamais",
+"Autre",
+"Je ne sais pas")
+
+donneesext_value<-c(sum(expanded_data$Utilisez.vous.des.données.de.recherche.externes.pour.votre.propre.recherche..données.qui.ne.sont.pas.générées.par.vous.même.s....=="Immédiatement sans traitement préalable"),
+                   sum(expanded_data$Utilisez.vous.des.données.de.recherche.externes.pour.votre.propre.recherche..données.qui.ne.sont.pas.générées.par.vous.même.s....=="Après un traitement minimal (compilation, nettoyage…)"),
+                   sum(expanded_data$Utilisez.vous.des.données.de.recherche.externes.pour.votre.propre.recherche..données.qui.ne.sont.pas.générées.par.vous.même.s....=="Après un traitement important"),
+                   sum(expanded_data$Utilisez.vous.des.données.de.recherche.externes.pour.votre.propre.recherche..données.qui.ne.sont.pas.générées.par.vous.même.s....=="Jamais"),
+                   sum(expanded_data$Utilisez.vous.des.données.de.recherche.externes.pour.votre.propre.recherche..données.qui.ne.sont.pas.générées.par.vous.même.s....=="Autre"),
+                   sum(expanded_data$Utilisez.vous.des.données.de.recherche.externes.pour.votre.propre.recherche..données.qui.ne.sont.pas.générées.par.vous.même.s....=="Je ne sais pas")
+                )
+
+donneesext_data <- data.frame(donneesext_name, donneesext_value)
+
+colors <- c("rgb(116,140,65)", "rgb(137,165,78)", "rgb(150,180,100)", "rgb(215,228,189)", "rgb(253,253,222)")
+
+p <- plot_ly(donneesext_data, labels = donneesext_name, values = donneesext_value, 
+        type = 'pie',
+        sort=FALSE,
+        direction='clockwise',
+        
+        textposition = 'outside',
+        textinfo = 'label+percent',
+        #insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+        domain=list(x=list(0.2,0.7),y=list(0,0.7)),
+        text = ~paste('', donneesext_value, ' répondants'),
+        showlegend = TRUE) %>%
+  layout(
+    #title = 'Utilisez-vous des données de recherche externes pour votre propre recherche \n(données qui ne sont pas générées par vous-même(s)) ?',
+         #autosize = TRUE,
+         margin=list(autoexpand=TRUE))
+p
+```
+
+### Êtes-vous confronté(s) à des contraintes légales concernant l’exploitation de données de recherche ?
+
+Une large majorité de répondants est confrontée à des contraintes légales concernant l'exploitation de données à un moment au cours de sa recherche.
+
+![Tip](./warning-98596_640.png) Un support relatif aux contraintes légales en matière de gestion des données de recherche paraît utile en conséquence.
+
+```{r contraintes_legal }
+
+contraintes_legal_name <- c(
+"Oui, souvent",
+"Oui, parfois",
+"Rarement",
+"Jamais",
+"Je ne sais pas")
+
+contraintes_legal_value<-c(sum(expanded_data$Êtes.vous.confronté.s..à.des.contraintes.légales.concernant.l.exploitation.de.données.de.recherche..=="Oui, souvent"),
+                   sum(expanded_data$Êtes.vous.confronté.s..à.des.contraintes.légales.concernant.l.exploitation.de.données.de.recherche..=="Oui, parfois"),
+                   sum(expanded_data$Êtes.vous.confronté.s..à.des.contraintes.légales.concernant.l.exploitation.de.données.de.recherche..=="Rarement"),
+                   sum(expanded_data$Êtes.vous.confronté.s..à.des.contraintes.légales.concernant.l.exploitation.de.données.de.recherche..=="Jamais"),
+                   sum(expanded_data$Êtes.vous.confronté.s..à.des.contraintes.légales.concernant.l.exploitation.de.données.de.recherche..=="Je ne sais pas")
+                )
+
+contraintes_legal_data <- data.frame(contraintes_legal_name, contraintes_legal_value)
+
+colors <- c("rgb(116,140,65)", "rgb(137,165,78)", "rgb(150,170,100)", "rgb(215,228,189)", "rgb(253,253,222)")
+
+p <- plot_ly(contraintes_legal_data, labels = contraintes_legal_name, values = contraintes_legal_value, 
+        type = 'pie',
+        sort=FALSE,
+        direction='clockwise',
+        
+        textposition = 'outside',
+        textinfo = 'label+percent',
+        #insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+        domain=list(x=list(0.2,0.7),y=list(0,0.7)),
+        text = ~paste('', contraintes_legal_value, ' répondants'),
+        showlegend = TRUE) %>%
+  layout(
+    #title = 'Êtes-vous confronté(s) à des contraintes légales\n concernant l’exploitation de données de recherche ?',
+         #autosize = TRUE,
+         margin=list(autoexpand=TRUE))
+p
+```
+
+### Qu’arrivera-t-il aux données de recherche générées au sein de votre unité de recherche si le créateur de ces données quitte l’institution ?
+
+Une large majorité de répondants indique que les données resteront à l'ULB si le créateur de ces données quitte l'institution.
+
+![Tip](./warning-98596_640.png) Près d'un répondant sur six estime que les données partiront avec leur créateur.
+
+```{r quitte_institution, fig.width = 8, fig.height = 8}
+
+quitte_institution_name <- c(
+"Les données resteront à l’ULB",
+"Les données partiront avec le créateur",
+"Autre",
+"Je ne sais pas",
+"Les données seront effacées")
+
+quitte_institution_count <- c (sum(expanded_data$Qu.arrivera.t.il.aux.données.de.recherche.générées.au.sein.de.votre.unité.de.recherche.si.le.créateur.de.ces.données.quitte.l.institution....Les.données.resteront.à.l.ULB. =="Oui"),
+         sum(expanded_data$Qu.arrivera.t.il.aux.données.de.recherche.générées.au.sein.de.votre.unité.de.recherche.si.le.créateur.de.ces.données.quitte.l.institution....Les.données.partiront.avec.le.créateur. =="Oui"),
+         sum(expanded_data$Qu.arrivera.t.il.aux.données.de.recherche.générées.au.sein.de.votre.unité.de.recherche.si.le.créateur.de.ces.données.quitte.l.institution....Autre. !=""),
+         sum(expanded_data$Qu.arrivera.t.il.aux.données.de.recherche.générées.au.sein.de.votre.unité.de.recherche.si.le.créateur.de.ces.données.quitte.l.institution....Je.ne.sais.pas. =="Oui"),
+         sum(expanded_data$Qu.arrivera.t.il.aux.données.de.recherche.générées.au.sein.de.votre.unité.de.recherche.si.le.créateur.de.ces.données.quitte.l.institution....Les.données.seront.effacées. =="Oui")
+  )
+
+quitte_institution_data <- data.frame(quitte_institution_name, quitte_institution_count)
+quitte_institution_data$percentage <- quitte_institution_data$quitte_institution_count/number_eq_responses*100
+quitte_institution_data<-quitte_institution_data[with(quitte_institution_data, order(quitte_institution_data$percentage)),]
+
+trace_quitte_institution_data <- list(
+  x =quitte_institution_data$percentage, 
+  y =quitte_institution_data$quitte_institution_name, 
+  error_x= list(
+        type='percent',
+        value=5,
+        color='#85144B',
+        thickness=1.5,
+        width=3,
+        opacity=1
+    ),
+  marker = list(color= brewer.pal(5, "Spectral")),
+  name = "Qu’arrivera-t-il aux données de recherche générées au sein de votre unité de recherche si le créateur de ces données quitte l’institution ?", 
+  opacity = 1, 
+  orientation = "v", 
+  type = "bar", 
+  textinfo = 'label+percent',
+  uid = "6a5b81"
+)
+
+#layout$title <- " Qu’arrivera-t-il aux données de recherche générées au sein de votre unité de recherche\n si le créateur de ces données quitte l’institution ? " 
+layout$xaxis$title <- "Réponses en pourcent"
+layout$yaxis$categoryarray <- quitte_institution_data$quitte_institution_name
+layout$yaxis$categoryorder <- "array"
+
+p <- plot_ly()
+p <- add_trace(p, x=trace_quitte_institution_data$x, y=trace_quitte_institution_data$y, error_x=trace_quitte_institution_data$error_x , marker=trace_quitte_institution_data$marker, name=trace_quitte_institution_data$name, opacity=trace_quitte_institution_data$opacity, orientation=trace_quitte_institution_data$orientation, type=trace_quitte_institution_data$type, uid=trace_quitte_institution_data$uid)
+
+p <- layout(p, annotations=layout$annotations, autosize=layout$autosize, bargap=layout$bargap, barmode=layout$barmode, dragmode=layout$dragmode, font=layout$font, height=layout$height, hidesources=layout$hidesources, hovermode=layout$hovermode, margin=layout$margin, paper_bgcolor=layout$paper_bgcolor, plot_bgcolor=layout$plot_bgcolor, separators=layout$separators, showlegend=layout$showlegend, title=layout$title, titlefont=layout$titlefont, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis)
+p
+```
+
+
+### Utilisez-vous des données de recherche à caractère sensible ou confidentiel?
+
+Une large majorité de répondants utilise des données de recherche à caractère sensible ou confidentiel.
+
+![Tip](./warning-98596_640.png) Un support relatif aux contraintes liées aux données de recherche à caractère sensible ou confidentiel paraît utile en conséquence. Le choix de l'infrastructure de stockage, de partage, de traitement et d'archivage est également impacté.
+
+```{r confidentiel }
+
+confidentiel_name <- c(
+"Souvent",
+"Parfois",
+"Rarement",
+"Jamais",
+"Je ne sais pas")
+
+confidentiel_value<-c(sum(expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel..=="Souvent"),
+                   sum(expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel..=="Parfois"),
+                   sum(expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel..=="Rarement"),
+                   sum(expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel..=="Jamais"),
+                   sum(expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel..=="Je ne sais pas")
+                )
+
+confidentiel_data <- data.frame(confidentiel_name, confidentiel_value)
+
+colors <- c("rgb(116,140,65)", "rgb(137,165,78)", "rgb(150,170,100)", "rgb(215,228,189)", "rgb(253,253,222)")
+
+p <- plot_ly(confidentiel_data, labels = confidentiel_name, values = confidentiel_value, 
+        type = 'pie',
+        sort=FALSE,
+        direction='clockwise',
+        
+        textposition = 'outside',
+        textinfo = 'label+percent',
+        #insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+        domain=list(x=list(0.2,0.7),y=list(0,0.7)),
+        text = ~paste('', confidentiel_value, ' répondants'),
+        showlegend = TRUE) %>%
+  layout(
+    #title = 'Utilisez-vous des données de recherche à caractère sensible ou confidentiel ?',
+         #autosize = TRUE,
+         margin=list(autoexpand=TRUE))
+p
+```
+
+### Quels moyens de stockage utilisent les répondants qui utilisent des données à caractère sensible "souvent" ou "parfois" ?
+
+![Tip](./warning-98596_640.png) Une proportion importante de répondants utilisant des données à caractère sensible "souvent" ou "parfois" utilise des solutions en cloud comme moyen de stockage (respectivement 53% et 67%).
+
+
+```{r confidential_storage, fig.width = 8, fig.height = 8}
+
+confidential_parfois_storage_name <- c("Localement sur votre PC",
+"Sur un disque dur externe ou clé USB personnel",
+"Sur un service cloud  (Dropbox, Amazon, Google, Microsoft...)",
+"Sur un serveur dédié géré par votre unité de recherche/institut",
+"Sur ownCloud de l’ULB",
+"Sur CD, DVD ou Blu-Ray",
+"Autre",
+"Dans un data center extérieur à l'ULB",
+"Au centre de calcul (Nestor)",
+"Sur Microsoft OneDrive de l’ULB")
+
+confidential_souvent_storage_name <- c("Localement sur votre PC",
+"Sur un disque dur externe ou clé USB personnel",
+"Sur un service cloud  (Dropbox, Amazon, Google, Microsoft...)",
+"Sur un serveur dédié géré par votre unité de recherche/institut",
+"Sur ownCloud de l’ULB",
+"Sur CD, DVD ou Blu-Ray",
+"Autre",
+"Dans un data center extérieur à l'ULB",
+"Au centre de calcul (Nestor)",
+"Sur Microsoft OneDrive de l’ULB")
+
+confidential_souvent_storage_count <- c (sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Localement.sur.votre.PC. =="Oui" & expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel.. == "Souvent") ,
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.un.disque.dur.externe.ou.clé.USB.personnel.=="Oui" & expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel.. == "Souvent" ) ,
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.un.service.cloud...Dropbox..Amazon..Google..Microsoft.....=="Oui"& expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel.. == "Souvent" ) ,
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.un.serveur.dédié.géré.par.votre.unité.de.recherche.institut.=="Oui"& expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel.. == "Souvent" ) ,
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.ownCloud.de.l.ULB.=="Oui"& expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel.. == "Souvent" ) ,
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.CD..DVD.ou.Blu.Ray.=="Oui"& expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel.. == "Souvent" ) ,
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Autre.!=""& expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel.. == "Souvent" ) ,
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Dans.un.data.center.extérieur.à.l.ULB.=="Oui"& expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel.. == "Souvent" ) ,
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Au.centre.de.calcul..Nestor..=="Oui"& expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel.. == "Souvent" ) ,
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.Microsoft.OneDrive.de.l.ULB.=="Oui"& expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel.. == "Souvent" ) )
+
+number_confidential_souvent = sum(expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel.. == "Souvent")
+
+confidential_souvent_storage_data <- data.frame(confidential_souvent_storage_name, confidential_souvent_storage_count)
+confidential_souvent_storage_data$percentage <- confidential_souvent_storage_data$confidential_souvent_storage_count/number_confidential_souvent*100
+confidential_souvent_storage_data<-confidential_souvent_storage_data[with(confidential_souvent_storage_data, order(confidential_souvent_storage_data$percentage)),]
+
+
+confidential_parfois_storage_count <- c (sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Localement.sur.votre.PC. =="Oui" & expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel.. == "Parfois") ,
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.un.disque.dur.externe.ou.clé.USB.personnel.=="Oui" & expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel.. == "Parfois" ) ,
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.un.service.cloud...Dropbox..Amazon..Google..Microsoft.....=="Oui"& expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel.. == "Parfois" ) ,
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.un.serveur.dédié.géré.par.votre.unité.de.recherche.institut.=="Oui"& expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel.. == "Parfois" ) ,
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.ownCloud.de.l.ULB.=="Oui"& expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel.. == "Parfois" ) ,
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.CD..DVD.ou.Blu.Ray.=="Oui"& expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel.. == "Parfois" ) ,
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Autre.!=""& expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel.. == "Parfois" ) ,
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Dans.un.data.center.extérieur.à.l.ULB.=="Oui"& expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel.. == "Parfois" ) ,
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Au.centre.de.calcul..Nestor..=="Oui"& expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel.. == "Parfois" ) ,
+  sum(expanded_data$Où.stockez.vous.habituellement.vos.données.de.recherche....Sur.Microsoft.OneDrive.de.l.ULB.=="Oui"& expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel.. == "Parfois" ) )
+
+number_confidential_parfois = sum(expanded_data$Utilisez.vous.des.données.de.recherche.à.caractère.sensible.ou.confidentiel.. == "Parfois")
+
+confidential_parfois_storage_data <- data.frame(confidential_parfois_storage_name, confidential_parfois_storage_count)
+confidential_parfois_storage_data$percentage <- confidential_parfois_storage_data$confidential_parfois_storage_count/number_confidential_parfois*100
+confidential_parfois_storage_data<-confidential_parfois_storage_data[with(confidential_parfois_storage_data, order(confidential_parfois_storage_data$percentage)),]
+
+trace_confidential_parfois_storage <- list(
+  x =confidential_parfois_storage_data$percentage, 
+  y =confidential_parfois_storage_data$confidential_parfois_storage_name, 
+  error_x= list(
+        type='percent',
+        value=5,
+        color='#85144B',
+        thickness=1.5,
+        width=3,
+        opacity=1
+    ),
+  marker = list(color= "rgb(100,149,237)"),
+  name = "Parfois", 
+  opacity = 1, 
+  orientation = "v", 
+  type = "bar", 
+  uid = "6a5b81"
+)
+
+trace_confidential_souvent_storage <- list(
+  x =confidential_souvent_storage_data$percentage, 
+  y =confidential_souvent_storage_data$confidential_souvent_storage_name, 
+  error_x= list(
+        type='percent',
+        value=5,
+        color='#85144B',
+        thickness=1.5,
+        width=3,
+        opacity=1
+    ),
+  marker = list(color= "rgb(220,20,60)"),
+  name = "Souvent", 
+  opacity = 1, 
+  orientation = "v", 
+  type = "bar", 
+  uid = "6a5b81"
+)
+
+#layout$title <- "Type de stockage utilisé" 
+layout$xaxis$title <- "Usage en pourcent"
+layout$yaxis$categoryarray <- confidential_parfois_storage_data$confidential_parfois_storage_name
+layout$yaxis$categoryorder <- "array"
+
+p <- plot_ly()
+p <- add_trace(p, x=trace_confidential_parfois_storage$x, y=trace_confidential_parfois_storage$y, error_x=trace_confidential_parfois_storage$error_x , marker=trace_confidential_parfois_storage$marker, name=trace_confidential_parfois_storage$name, opacity=trace_confidential_parfois_storage$opacity, orientation=trace_confidential_parfois_storage$orientation, type=trace_confidential_parfois_storage$type, uid=trace_confidential_parfois_storage$uid)
+
+p <- add_trace(p, x=trace_confidential_souvent_storage$x, y=trace_confidential_souvent_storage$y, error_x=trace_confidential_souvent_storage$error_x , marker=trace_confidential_souvent_storage$marker, name=trace_confidential_souvent_storage$name, opacity=trace_confidential_souvent_storage$opacity, orientation=trace_confidential_souvent_storage$orientation, type=trace_confidential_souvent_storage$type, uid=trace_confidential_souvent_storage$uid)
+
+
+p <- layout(p, annotations=layout$annotations, autosize=layout$autosize, bargap=layout$bargap, barmode=layout$barmode, dragmode=layout$dragmode, font=layout$font, height=layout$height, hidesources=layout$hidesources, hovermode=layout$hovermode, margin=layout$margin, paper_bgcolor=layout$paper_bgcolor, plot_bgcolor=layout$plot_bgcolor, separators=layout$separators, showlegend=layout$showlegend, title=layout$title, titlefont=layout$titlefont, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis)
+p
+```
+
+
+
+
+## Accessibilité et réutilisation
+
+### Comment assurez-vous l’accès par un tiers à vos données dans votre gestion quotidienne ? 
+
+En majorité, pour assurer l'accès par un tiers à leurs données de recherche, les répondants exploitent :
+
+- l'email
+
+- un serveur de fichiers spécifique géré par leur unité de recherche
+
+- des solutions dans le cloud
+
+![Tip](./warning-98596_640.png) La taille des jeux de données influence le choix de la solution (voir infra)
+
+![Tip](./warning-98596_640.png) Le choix de la solution dans le cloud ou de l'email peut poser problème dans le cadre des données sensibles.
+
+![Tip](./warning-98596_640.png) La solution ownCloud proposée par l'ULB est utilisée par un nombre non négligeable de répondants bien que peu de promotion ait été faite (peut-être dû à un biais de l'échantillon)
+
+
+```{r acces_quotidien, fig.width = 8, fig.height = 8}
+
+acces_quotidien_name <- c("Via le Cloud (Dropbox, Google Drive, weTransfer, git ...)",
+"Par email",
+"Via un serveur de fichiers spécifique géré par votre unité de recherche",
+"Par le transfert de disques physiques",
+"Via un site web personnel ou celui de votre unité de recherche",
+"Via ownCloud de l’ULB",
+"Autre",
+"Je ne partage pas mes données",
+"Via Microsoft OneDrive de l’ULB")
+
+acces_quotidien_count <- c (sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Via.des.applications.dans.le.Cloud..Dropbox..Google.Drive..weTransfer..git... =="Oui"),
+         sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Par.email.=="Oui"),
+         sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Via.un.serveur.de.fichiers.spécifique.géré.par.votre.unité.de.recherche.=="Oui"),
+sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Par.le.transfert.de.disques.physiques.=="Oui"),
+         sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Via.un.site.web.personnel.ou.celui.de.votre.unité.de.recherche.=="Oui"),
+sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Via.ownCloud.de.l.ULB.=="Oui"),
+         sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Autre. !=""),
+sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Je.ne.partage.pas.mes.données.=="Oui"),
+sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Via.Microsoft.OneDrive.de.l.ULB.=="Oui")
+  )
+
+acces_quotidien_data <- data.frame(acces_quotidien_name, acces_quotidien_count)
+acces_quotidien_data$percentage <- acces_quotidien_data$acces_quotidien_count/number_eq_responses*100
+acces_quotidien_data<-acces_quotidien_data[with(acces_quotidien_data, order(acces_quotidien_data$percentage)),]
+
+trace_acces_quotidien_data <- list(
+  x =acces_quotidien_data$percentage, 
+  y =acces_quotidien_data$acces_quotidien_name, 
+  error_x= list(
+        type='percent',
+        value=5,
+        color='#85144B',
+        thickness=1.5,
+        width=3,
+        opacity=1
+    ),
+  marker = list(color= brewer.pal(9, "Spectral")),
+  name = "Comment assurez-vous l’accès par un tiers à vos données\n dans votre gestion quotidienne ?", 
+  opacity = 1, 
+  orientation = "v", 
+  type = "bar", 
+  textinfo = 'label+percent',
+  uid = "6a5b81"
+)
+
+#layout$title <- "Comment assurez-vous l’accès par un tiers à vos données\n dans votre gestion quotidienne ?" 
+layout$xaxis$title <- "Réponses en pourcent"
+layout$yaxis$categoryarray <- acces_quotidien_data$acces_quotidien_name
+layout$yaxis$categoryorder <- "array"
+
+p <- plot_ly()
+p <- add_trace(p, x=trace_acces_quotidien_data$x, y=trace_acces_quotidien_data$y, error_x=trace_acces_quotidien_data$error_x , marker=trace_acces_quotidien_data$marker, name=trace_acces_quotidien_data$name, opacity=trace_acces_quotidien_data$opacity, orientation=trace_acces_quotidien_data$orientation, type=trace_acces_quotidien_data$type, uid=trace_acces_quotidien_data$uid)
+
+p <- layout(p, annotations=layout$annotations, autosize=layout$autosize, bargap=layout$bargap, barmode=layout$barmode, dragmode=layout$dragmode, font=layout$font, height=layout$height, hidesources=layout$hidesources, hovermode=layout$hovermode, margin=layout$margin, paper_bgcolor=layout$paper_bgcolor, plot_bgcolor=layout$plot_bgcolor, separators=layout$separators, showlegend=layout$showlegend, title=layout$title, titlefont=layout$titlefont, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis)
+p
+```
+
+### Comment assurez-vous l’accès par un tiers à vos données dans votre gestion quotidienne ?  (<=100GB/an)
+
+Les répondants générant **moins de 100 GB** par an utilisent en majorité **l'email** pour partager leurs données.
+
+```{r access_less_than_100_GB, fig.width = 8, fig.height = 8}
+
+acces_quotidien_name <- c("Via le Cloud (Dropbox, Google Drive, weTransfer, git ...)",
+"Par email",
+"Via un serveur de fichiers spécifique géré par votre unité de recherche",
+"Par le transfert de disques physiques",
+"Via un site web personnel ou celui de votre unité de recherche",
+"Via ownCloud de l’ULB",
+"Autre",
+"Je ne partage pas mes données",
+"Via Microsoft OneDrive de l’ULB")
+
+acces_quotidien_count <- c (sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Via.des.applications.dans.le.Cloud..Dropbox..Google.Drive..weTransfer..git... =="Oui" & expanded_data$Quantité.données.max <= 100),
+         sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Par.email.=="Oui" & expanded_data$Quantité.données.max <= 100),
+         sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Via.un.serveur.de.fichiers.spécifique.géré.par.votre.unité.de.recherche.=="Oui" & expanded_data$Quantité.données.max <= 100),
+sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Par.le.transfert.de.disques.physiques.=="Oui" & expanded_data$Quantité.données.max <= 100),
+         sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Via.un.site.web.personnel.ou.celui.de.votre.unité.de.recherche.=="Oui" & expanded_data$Quantité.données.max <= 100),
+sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Via.ownCloud.de.l.ULB.=="Oui" & expanded_data$Quantité.données.max <= 100),
+         sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Autre. !="" & expanded_data$Quantité.données.max <= 100),
+sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Je.ne.partage.pas.mes.données.=="Oui" & expanded_data$Quantité.données.max <= 100),
+sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Via.Microsoft.OneDrive.de.l.ULB.=="Oui" & expanded_data$Quantité.données.max <= 100)
+  )
+
+number_less_100 = sum(expanded_data$Quantité.données.max <= 100)
+
+acces_quotidien_data <- data.frame(acces_quotidien_name, acces_quotidien_count)
+acces_quotidien_data$percentage <- acces_quotidien_data$acces_quotidien_count/number_less_100*100
+acces_quotidien_data<-acces_quotidien_data[with(acces_quotidien_data, order(acces_quotidien_data$percentage)),]
+
+trace_acces_quotidien <- list(
+  x =acces_quotidien_data$percentage, 
+  y =acces_quotidien_data$acces_quotidien_name, 
+  error_x= list(
+        type='percent',
+        value=5,
+        color='#85144B',
+        thickness=1.5,
+        width=3,
+        opacity=1
+    ),
+  marker = list(color= brewer.pal(11, "Spectral")),
+  name = "Type de contenu", 
+  opacity = 1, 
+  orientation = "v", 
+  type = "bar", 
+  uid = "6a5b81"
+)
+
+#layout$title <- "Type de stockage utilisé" 
+layout$xaxis$title <- "Usage en pourcent"
+layout$yaxis$categoryarray <- acces_quotidien_data$acces_quotidien_name
+layout$yaxis$categoryorder <- "array"
+
+p <- plot_ly()
+p <- add_trace(p, x=trace_acces_quotidien$x, y=trace_acces_quotidien$y, error_x=trace_acces_quotidien$error_x , marker=trace_acces_quotidien$marker, name=trace_acces_quotidien$name, opacity=trace_acces_quotidien$opacity, orientation=trace_acces_quotidien$orientation, type=trace_acces_quotidien$type, uid=trace_acces_quotidien$uid)
+
+p <- layout(p, annotations=layout$annotations, autosize=layout$autosize, bargap=layout$bargap, barmode=layout$barmode, dragmode=layout$dragmode, font=layout$font, height=layout$height, hidesources=layout$hidesources, hovermode=layout$hovermode, margin=layout$margin, paper_bgcolor=layout$paper_bgcolor, plot_bgcolor=layout$plot_bgcolor, separators=layout$separators, showlegend=layout$showlegend, title=layout$title, titlefont=layout$titlefont, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis)
+p
+```
+
+### Comment assurez-vous l’accès par un tiers à vos données dans votre gestion quotidienne ?  (>100GB)
+
+Les répondants générant **plus de 100 GB** par an utilisent en majorité **un serveur de fichier géré par leur unité de recherche** pour partager leurs données.
+
+```{r access_more_than_100_GB, fig.width = 8, fig.height = 8}
+
+acces_quotidien_name <- c("Via le Cloud (Dropbox, Google Drive, weTransfer, git ...)",
+"Par email",
+"Via un serveur de fichiers spécifique géré par votre unité de recherche",
+"Par le transfert de disques physiques",
+"Via un site web personnel ou celui de votre unité de recherche",
+"Via ownCloud de l’ULB",
+"Autre",
+"Je ne partage pas mes données",
+"Via Microsoft OneDrive de l’ULB")
+
+acces_quotidien_count <- c (sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Via.des.applications.dans.le.Cloud..Dropbox..Google.Drive..weTransfer..git... =="Oui" & expanded_data$Quantité.données.max > 100),
+         sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Par.email.=="Oui" & expanded_data$Quantité.données.max > 100),
+         sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Via.un.serveur.de.fichiers.spécifique.géré.par.votre.unité.de.recherche.=="Oui" & expanded_data$Quantité.données.max > 100),
+sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Par.le.transfert.de.disques.physiques.=="Oui" & expanded_data$Quantité.données.max > 100),
+         sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Via.un.site.web.personnel.ou.celui.de.votre.unité.de.recherche.=="Oui" & expanded_data$Quantité.données.max > 100),
+sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Via.ownCloud.de.l.ULB.=="Oui" & expanded_data$Quantité.données.max > 100),
+         sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Autre. !="" & expanded_data$Quantité.données.max > 100),
+sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Je.ne.partage.pas.mes.données.=="Oui" & expanded_data$Quantité.données.max > 100),
+sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Via.Microsoft.OneDrive.de.l.ULB.=="Oui" & expanded_data$Quantité.données.max > 100)
+  )
+
+number_more_100 = sum(expanded_data$Quantité.données.max > 100)
+
+acces_quotidien_data <- data.frame(acces_quotidien_name, acces_quotidien_count)
+acces_quotidien_data$percentage <- acces_quotidien_data$acces_quotidien_count/number_more_100*100
+acces_quotidien_data<-acces_quotidien_data[with(acces_quotidien_data, order(acces_quotidien_data$percentage)),]
+
+trace_acces_quotidien <- list(
+  x =acces_quotidien_data$percentage, 
+  y =acces_quotidien_data$acces_quotidien_name, 
+  error_x= list(
+        type='percent',
+        value=5,
+        color='#85144B',
+        thickness=1.5,
+        width=3,
+        opacity=1
+    ),
+  marker = list(color= brewer.pal(11, "Spectral")),
+  name = "Type de contenu", 
+  opacity = 1, 
+  orientation = "v", 
+  type = "bar", 
+  uid = "6a5b81"
+)
+
+#layout$title <- "Type de stockage utilisé" 
+layout$xaxis$title <- "Usage en pourcent"
+layout$yaxis$categoryarray <- acces_quotidien_data$acces_quotidien_name
+layout$yaxis$categoryorder <- "array"
+
+p <- plot_ly()
+p <- add_trace(p, x=trace_acces_quotidien$x, y=trace_acces_quotidien$y, error_x=trace_acces_quotidien$error_x , marker=trace_acces_quotidien$marker, name=trace_acces_quotidien$name, opacity=trace_acces_quotidien$opacity, orientation=trace_acces_quotidien$orientation, type=trace_acces_quotidien$type, uid=trace_acces_quotidien$uid)
+
+p <- layout(p, annotations=layout$annotations, autosize=layout$autosize, bargap=layout$bargap, barmode=layout$barmode, dragmode=layout$dragmode, font=layout$font, height=layout$height, hidesources=layout$hidesources, hovermode=layout$hovermode, margin=layout$margin, paper_bgcolor=layout$paper_bgcolor, plot_bgcolor=layout$plot_bgcolor, separators=layout$separators, showlegend=layout$showlegend, title=layout$title, titlefont=layout$titlefont, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis)
+p
+```
+
+
+### A qui autorisez-vous l’accès aux données que vous partagez ?
+
+En très grande majorité, les répondants autorisent l'accès aux données aux partenaires du projet de recherche.
+
+![Tip](./warning-98596_640.png) La solution de partage préconisée devrait donc permettre de **partager** aisément les données **avec des membres d'autres institutions**.
+
+
+```{r autorisation_acces, fig.width = 8, fig.height = 8}
+
+autorisation_acces_name <- c("Aux partenaires de projet de recherche",
+"Aux personnes intéressées sur demande",
+"A toute la communauté scientifique",
+"A tout public",
+"Autre",
+"A tous les membres de l’ULB")
+
+autorisation_acces_count <- c (sum(expanded_data$A.qui.autorisez.vous.l.accès.aux.données.que.vous.partagez....Aux.partenaires.de.projet.de.recherche. =="Oui"),
+         sum(expanded_data$A.qui.autorisez.vous.l.accès.aux.données.que.vous.partagez....Aux.personnes.intéressées.sur.demande.=="Oui"),
+         sum(expanded_data$A.qui.autorisez.vous.l.accès.aux.données.que.vous.partagez....A.toute.la.communauté.scientifique.=="Oui"),
+sum(expanded_data$A.qui.autorisez.vous.l.accès.aux.données.que.vous.partagez....A.tout.public.=="Oui"),
+         sum(expanded_data$A.qui.autorisez.vous.l.accès.aux.données.que.vous.partagez....Autre.!=""),
+sum(expanded_data$A.qui.autorisez.vous.l.accès.aux.données.que.vous.partagez....A.tous.les.membres.de.l.ULB.=="Oui")
+  )
+
+#ne pas considérer ceux qui ne partage pas dans le calcul de pourcentage:
+number_eq_share <- number_eq_responses - sum(expanded_data$Comment.assurez.vous.l.accès.par.un.tiers.à.vos.données.dans.votre.gestion.quotidienne....Je.ne.partage.pas.mes.données.=="Oui")
+                                             
+autorisation_acces_data <- data.frame(autorisation_acces_name, autorisation_acces_count)
+autorisation_acces_data$percentage <- autorisation_acces_data$autorisation_acces_count/number_eq_share*100
+autorisation_acces_data<-autorisation_acces_data[with(autorisation_acces_data, order(autorisation_acces_data$percentage)),]
+
+trace_autorisation_acces_data <- list(
+  x =autorisation_acces_data$percentage, 
+  y =autorisation_acces_data$autorisation_acces_name, 
+  error_x= list(
+        type='percent',
+        value=5,
+        color='#85144B',
+        thickness=1.5,
+        width=3,
+        opacity=1
+    ),
+  marker = list(color= brewer.pal(9, "Spectral")),
+  name = "Qu’arrivera-t-il aux données de recherche générées au sein de votre unité de recherche si le créateur de ces données quitte l’institution ?", 
+  opacity = 1, 
+  orientation = "v", 
+  type = "bar", 
+  textinfo = 'label+percent',
+  uid = "6a5b81"
+)
+
+#layout$title <- "A qui autorisez-vous l’accès aux données que vous partagez ? " 
+layout$xaxis$title <- "Réponses en pourcent"
+layout$yaxis$categoryarray <- autorisation_acces_data$autorisation_acces_name
+layout$yaxis$categoryorder <- "array"
+
+p <- plot_ly()
+p <- add_trace(p, x=trace_autorisation_acces_data$x, y=trace_autorisation_acces_data$y, error_x=trace_autorisation_acces_data$error_x , marker=trace_autorisation_acces_data$marker, name=trace_autorisation_acces_data$name, opacity=trace_autorisation_acces_data$opacity, orientation=trace_autorisation_acces_data$orientation, type=trace_autorisation_acces_data$type, uid=trace_autorisation_acces_data$uid)
+
+p <- layout(p, annotations=layout$annotations, autosize=layout$autosize, bargap=layout$bargap, barmode=layout$barmode, dragmode=layout$dragmode, font=layout$font, height=layout$height, hidesources=layout$hidesources, hovermode=layout$hovermode, margin=layout$margin, paper_bgcolor=layout$paper_bgcolor, plot_bgcolor=layout$plot_bgcolor, separators=layout$separators, showlegend=layout$showlegend, title=layout$title, titlefont=layout$titlefont, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis)
+p
+```
+
+### Vos données de recherche sont-elles réutilisables par d’autres ?
+
+
+En grande majorité, les répondants estiment que leurs données de recherche sont réutilisables. Toutefois, seuls 25% répondants estiment que la réutilisation pourra se faire immédiatement.
+
+![Tip](./warning-98596_640.png) Des recommandations en matière de documentation des données seraient utiles.
+
+```{r reutilisable }
+
+reutilisable_name <- c(
+"Oui, immédiatement\n (standard ou documentées)",
+"Oui, mais après un effort\n d'interprétation",
+"Parfois,\n pas systématiquement",
+"Non")
+
+reutilisable_value<-c(sum(expanded_data$Vos.données.de.recherche.sont.elles.réutilisables.par.d.autres..=="Oui, immédiatement (les données suivent un standard ou sont documentées)"),
+                   sum(expanded_data$Vos.données.de.recherche.sont.elles.réutilisables.par.d.autres..=="Oui, mais après un effort d'interprétation (format des données personnalisé et peu documenté)"),
+                   sum(expanded_data$Vos.données.de.recherche.sont.elles.réutilisables.par.d.autres..=="Parfois, pas systématiquement"),
+                   sum(expanded_data$Vos.données.de.recherche.sont.elles.réutilisables.par.d.autres..=="Non")
+                )
+
+reutilisable_data <- data.frame(reutilisable_name, reutilisable_value)
+
+colors <- c("rgb(116,140,65)", "rgb(137,165,78)", "rgb(150,170,100)",  "rgb(253,253,222)")
+
+
+p <- plot_ly(reutilisable_data, labels = reutilisable_name, values = reutilisable_value, 
+        type = 'pie',
+        sort=FALSE,
+        direction='clockwise',
+        
+        textposition = 'outside',
+        textinfo = 'label+percent',
+        #insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+        domain=list(x=list(0.2,0.7),y=list(0,0.7)),
+        text = ~paste('', reutilisable_value, ' répondants'),
+        showlegend = TRUE) %>%
+ layout(#title = 'Vos données de recherche sont-elles réutilisables par d’autres ?',
+         #autosize = TRUE,
+         margin=list(autoexpand=TRUE))
+p
+```
+
+### Quel(s) type(s) de licence accordez-vous aux utilisateurs de vos données ?
+
+Pour la majorité des répondants, l'accord de collaboration avec les partenaires de projet sert de licence d'utilisation.
+
+![Tip](./warning-98596_640.png) Plus d'un quart des répondants exploite une licence ouverte (Creative Commons, General Public License…)
+
+```{r type_licence, fig.width = 8, fig.height = 8}
+
+type_licence_name <- c(
+"Accord de collaboration",
+"Licence ouverte (Creative Commons, General Public License…)",
+"Aucune",
+"Licence individuelle",
+"Je ne sais pas",
+"Autre")
+
+type_licence_count <- c (sum(expanded_data$Quel.s..type.s..de.licence.accordez.vous.aux.utilisateurs.de.vos.données....Accord.de.collaboration.=="Oui"),
+                         sum(expanded_data$Quel.s..type.s..de.licence.accordez.vous.aux.utilisateurs.de.vos.données....Licence.ouverte..Creative.Commons..General.Public.License...=="Oui"),
+                         sum(expanded_data$Quel.s..type.s..de.licence.accordez.vous.aux.utilisateurs.de.vos.données....Aucune.=="Oui"),
+                         
+         sum(expanded_data$Quel.s..type.s..de.licence.accordez.vous.aux.utilisateurs.de.vos.données....Licence.individuelle. =="Oui"),
+         sum(expanded_data$Quel.s..type.s..de.licence.accordez.vous.aux.utilisateurs.de.vos.données....Je.ne.sais.pas. =="Oui"),
+         sum(expanded_data$Quel.s..type.s..de.licence.accordez.vous.aux.utilisateurs.de.vos.données....Autre. !="")
+  )
+
+type_licence_data <- data.frame(type_licence_name, type_licence_count)
+type_licence_data$percentage <- type_licence_data$type_licence_count/number_eq_responses*100
+type_licence_data<-type_licence_data[with(type_licence_data, order(type_licence_data$percentage)),]
+
+trace_type_licence_data <- list(
+  x =type_licence_data$percentage, 
+  y =type_licence_data$type_licence_name, 
+  error_x= list(
+        type='percent',
+        value=5,
+        color='#85144B',
+        thickness=1.5,
+        width=3,
+        opacity=1
+    ),
+  marker = list(color= brewer.pal(6, "Spectral")),
+  name = "Quel(s) type(s) de licence accordez-vous aux utilisateurs de vos données ?", 
+  opacity = 1, 
+  orientation = "v", 
+  type = "bar", 
+  textinfo = 'label+percent',
+  uid = "6a5b81"
+)
+
+#layout$title <- " Quel(s) type(s) de licence accordez-vous aux utilisateurs de vos données ? " 
+layout$xaxis$title <- "Réponses en pourcent"
+layout$yaxis$categoryarray <- type_licence_data$type_licence_name
+layout$yaxis$categoryorder <- "array"
+
+p <- plot_ly()
+p <- add_trace(p, x=trace_type_licence_data$x, y=trace_type_licence_data$y, error_x=trace_type_licence_data$error_x , marker=trace_type_licence_data$marker, name=trace_type_licence_data$name, opacity=trace_type_licence_data$opacity, orientation=trace_type_licence_data$orientation, type=trace_type_licence_data$type, uid=trace_type_licence_data$uid)
+
+p <- layout(p, annotations=layout$annotations, autosize=layout$autosize, bargap=layout$bargap, barmode=layout$barmode, dragmode=layout$dragmode, font=layout$font, height=layout$height, hidesources=layout$hidesources, hovermode=layout$hovermode, margin=layout$margin, paper_bgcolor=layout$paper_bgcolor, plot_bgcolor=layout$plot_bgcolor, separators=layout$separators, showlegend=layout$showlegend, title=layout$title, titlefont=layout$titlefont, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis)
+p
+```
+
+## Infrastructures et services
+
+### Quel(s) type(s) de dépôt(s) de données préférez-vous (ou préféreriez-vous) utiliser pour assurer la préservation et, éventuellement, le partage de vos données ?
+
+La majorité des répondants préférerait utiliser un **dépôt de données de recherche institutionnel centralisé** pour assurer la préservation et, éventuellement, le partage de leurs données.
+
+![Tip](./warning-98596_640.png) A court terme, la création d'un prototype de dépôt de données de recherche institutionnel s'avèrerait donc utile.
+
+![Tip](./warning-98596_640.png) L'utilisation des dépôts commerciaux généralistes est très clairement écartée par les répondants 
+
+![Tip](./warning-98596_640.png) Seule une minorité de répondants ne souhaitent pas utiliser de dépôt de données
+
+```{r type_depot, fig.width = 8, fig.height = 8}
+
+type_depot_name <- c(
+"Un dépôt institutionnel centralisé à l’ULB",
+"Un dépôt international spécifique à votre discipline",
+"Des dépôts décentralisés à l’ULB",
+"Autre",
+"Un dépôt commercial généraliste (FigShare, Mendeley data…)",
+"Je ne souhaite pas utiliser de dépôt de données",
+"Un dépôt non commercial généraliste (Zenodo, Dryad)")
+
+type_depot_count <- c (
+                         sum(expanded_data$Quel.s..type.s..de.dépôt.s..de.données.préférez.vous..ou.préféreriez.vous..utiliser.pour.assurer.la.préservation.et..éventuellement..le.partage.de.vos.données....Un.dépôt.institutionnel.centralisé.à.l.ULB.=="Oui"),
+
+sum(expanded_data$Quel.s..type.s..de.dépôt.s..de.données.préférez.vous..ou.préféreriez.vous..utiliser.pour.assurer.la.préservation.et..éventuellement..le.partage.de.vos.données....Un.dépôt.international.spécifique.à.votre.discipline.=="Oui"),
+
+sum(expanded_data$Quel.s..type.s..de.dépôt.s..de.données.préférez.vous..ou.préféreriez.vous..utiliser.pour.assurer.la.préservation.et..éventuellement..le.partage.de.vos.données....Des.dépôts.décentralisés.à.l.ULB. =="Oui"),
+
+sum(expanded_data$Quel.s..type.s..de.dépôt.s..de.données.préférez.vous..ou.préféreriez.vous..utiliser.pour.assurer.la.préservation.et..éventuellement..le.partage.de.vos.données....Autre. !=""),
+
+                       sum(expanded_data$Quel.s..type.s..de.dépôt.s..de.données.préférez.vous..ou.préféreriez.vous..utiliser.pour.assurer.la.préservation.et..éventuellement..le.partage.de.vos.données....Un.dépôt.commercial.généraliste..FigShare..Mendeley.data...=="Oui"),
+                       
+         sum(expanded_data$Quel.s..type.s..de.dépôt.s..de.données.préférez.vous..ou.préféreriez.vous..utiliser.pour.assurer.la.préservation.et..éventuellement..le.partage.de.vos.données....Je.ne.souhaite.pas.utiliser.de.dépôt.de.données. =="Oui"),
+         
+         sum(expanded_data$Quel.s..type.s..de.dépôt.s..de.données.préférez.vous..ou.préféreriez.vous..utiliser.pour.assurer.la.préservation.et..éventuellement..le.partage.de.vos.données....Un.dépôt.non.commercial.généraliste..Zenodo..Dryad..=="Oui")
+  )
+
+type_depot_data <- data.frame(type_depot_name, type_depot_count)
+type_depot_data$percentage <- type_depot_data$type_depot_count/number_eq_responses*100
+type_depot_data<-type_depot_data[with(type_depot_data, order(type_depot_data$percentage)),]
+
+trace_type_depot_data <- list(
+  x =type_depot_data$percentage, 
+  y =type_depot_data$type_depot_name, 
+  error_x= list(
+        type='percent',
+        value=5,
+        color='#85144B',
+        thickness=1.5,
+        width=3,
+        opacity=1
+    ),
+  marker = list(color= brewer.pal(7, "Spectral")),
+  name = "Quel(s) type(s) de dépôt(s) de données préférez-vous (ou préféreriez-vous) utiliser pour assurer la préservation et, éventuellement, le partage de vos données ? ", 
+  opacity = 1, 
+  orientation = "v", 
+  type = "bar", 
+  textinfo = 'label+percent',
+  uid = "6a5b81"
+)
+
+#layout$title <- " Quel(s) type(s) de dépôt(s) de données préférez-vous (ou préféreriez-vous)\n utiliser pour assurer la préservation et, éventuellement, le partage de vos données ? " 
+layout$xaxis$title <- "Réponses en pourcent"
+layout$yaxis$categoryarray <- type_depot_data$type_depot_name
+layout$yaxis$categoryorder <- "array"
+
+p <- plot_ly()
+p <- add_trace(p, x=trace_type_depot_data$x, y=trace_type_depot_data$y, error_x=trace_type_depot_data$error_x , marker=trace_type_depot_data$marker, name=trace_type_depot_data$name, opacity=trace_type_depot_data$opacity, orientation=trace_type_depot_data$orientation, type=trace_type_depot_data$type, uid=trace_type_depot_data$uid)
+
+p <- layout(p, annotations=layout$annotations, autosize=layout$autosize, bargap=layout$bargap, barmode=layout$barmode, dragmode=layout$dragmode, font=layout$font, height=layout$height, hidesources=layout$hidesources, hovermode=layout$hovermode, margin=layout$margin, paper_bgcolor=layout$paper_bgcolor, plot_bgcolor=layout$plot_bgcolor, separators=layout$separators, showlegend=layout$showlegend, title=layout$title, titlefont=layout$titlefont, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis)
+p
+```
+
+### Pourcentage des répondants favorables un dépôt à l'ULB (centralisé ou non)
+```{r institrepo}
+
+type_depot_name <- c(
+"Dépôt institutionnel\n centralisé ou non",
+"Autre dépôt", 
+"Je ne souhaite pas utiliser de dépôt")
+
+depotinstit_count <- sum(expanded_data$Quel.s..type.s..de.dépôt.s..de.données.préférez.vous..ou.préféreriez.vous..utiliser.pour.assurer.la.préservation.et..éventuellement..le.partage.de.vos.données....Un.dépôt.institutionnel.centralisé.à.l.ULB.=="Oui" & expanded_data$Quel.s..type.s..de.dépôt.s..de.données.préférez.vous..ou.préféreriez.vous..utiliser.pour.assurer.la.préservation.et..éventuellement..le.partage.de.vos.données....Des.dépôts.décentralisés.à.l.ULB. =="Oui") + sum(expanded_data$Quel.s..type.s..de.dépôt.s..de.données.préférez.vous..ou.préféreriez.vous..utiliser.pour.assurer.la.préservation.et..éventuellement..le.partage.de.vos.données....Un.dépôt.institutionnel.centralisé.à.l.ULB.=="Non" & expanded_data$Quel.s..type.s..de.dépôt.s..de.données.préférez.vous..ou.préféreriez.vous..utiliser.pour.assurer.la.préservation.et..éventuellement..le.partage.de.vos.données....Des.dépôts.décentralisés.à.l.ULB. =="Oui") + sum(expanded_data$Quel.s..type.s..de.dépôt.s..de.données.préférez.vous..ou.préféreriez.vous..utiliser.pour.assurer.la.préservation.et..éventuellement..le.partage.de.vos.données....Un.dépôt.institutionnel.centralisé.à.l.ULB.=="Oui" & expanded_data$Quel.s..type.s..de.dépôt.s..de.données.préférez.vous..ou.préféreriez.vous..utiliser.pour.assurer.la.préservation.et..éventuellement..le.partage.de.vos.données....Des.dépôts.décentralisés.à.l.ULB. =="Non")
+
+pasdedepot_count <- sum(expanded_data$Quel.s..type.s..de.dépôt.s..de.données.préférez.vous..ou.préféreriez.vous..utiliser.pour.assurer.la.préservation.et..éventuellement..le.partage.de.vos.données....Je.ne.souhaite.pas.utiliser.de.dépôt.de.données.=="Oui")
+
+autre_depot_count <- number_eq_responses - depotinstit_count - pasdedepot_count
+  
+
+type_depot_value <- c (depotinstit_count,  autre_depot_count, pasdedepot_count)
+
+type_depot_data <- data.frame(type_depot_name, type_depot_value)
+colors <- c("rgb(116,140,65)", "rgb(234,241,222)", "rgb(240,255,240)")
+
+p <- plot_ly(type_depot_data, labels = type_depot_name, values = type_depot_value, 
+        type = 'pie',
+        sort=FALSE,
+        direction='clockwise',
+        
+        textposition = 'outside',
+        textinfo = 'label+percent',
+        #insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+        domain=list(x=list(0.2,0.7),y=list(0,0.7)),
+        text = ~paste('', type_depot_value, ' répondants'),
+        showlegend = TRUE) %>%
+  layout(
+         margin=list(autoexpand=TRUE))
+p
+
+```
+
+### Utiliseriez-vous ce type d'infrastructure ou de service s’il était disponible à l’ULB - [Support de premier niveau (helpdesk)]
+
+Une large majorité des répondants utiliserait un support de premier niveau s'il était disponible à l'ULB.
+
+![Tip](./warning-98596_640.png) Reste à définir quelles sont les attentes concrètes par rapport à ce service.
+
+```{r utiliseriez-support }
+
+utiliseriez_name <- c(
+"Très certainement",
+"Certainement",
+"Probablement pas",
+"Certainement pas",
+"Sans Avis")
+
+utiliseriez_value<-c(sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Support.de.premier.niveau..helpdesk..=="Très certainement"),
+                   sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Support.de.premier.niveau..helpdesk..=="Certainement"),
+                   sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Support.de.premier.niveau..helpdesk..=="Probablement pas"),
+                   sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Support.de.premier.niveau..helpdesk..=="Certainement pas"),
+                   sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Support.de.premier.niveau..helpdesk..=="Sans Avis")
+                )
+
+utiliseriez_data <- data.frame(utiliseriez_name, utiliseriez_value)
+
+colors <- c("rgb(116,140,65)", "rgb(137,165,78)", "rgb(215,228,189)", "rgb(215,228,189)", "rgb(234,241,222)")
+
+p <- plot_ly(utiliseriez_data, labels = utiliseriez_name, values = utiliseriez_value, 
+        type = 'pie',
+        sort=FALSE,
+        direction='clockwise',
+        
+        textposition = 'outside',
+        textinfo = 'label+percent',
+        #insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+        domain=list(x=list(0.2,0.7),y=list(0,0.7)),
+        text = ~paste('', utiliseriez_value, ' répondants'),
+        showlegend = TRUE) %>%
+  layout(#title = 'Utiliseriez-vous un service de support de premier niveau (helpdesk)\n s\'il était disponible à l\'ULB',
+         #autosize = TRUE,
+         margin=list(autoexpand=TRUE))
+p
+```
+
+### Utiliseriez-vous ce type d'infrastructure ou de service s’il était disponible à l’ULB - [Conseils juridiques]
+Une majorité des répondants aurait recours à un service de conseils juridiques s'il était disponible à l'ULB
+
+![Tip](./warning-98596_640.png) Reste à définir quelles sont les attentes concrètes par rapport à ce service.
+
+```{r utiliseriez-juridiques }
+
+utiliseriez_name <- c(
+"Très certainement",
+"Certainement",
+"Probablement pas",
+"Certainement pas",
+"Sans Avis")
+
+utiliseriez_value<-c(sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Conseils.juridiques.=="Très certainement"),
+                   sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Conseils.juridiques.=="Certainement"),
+                   sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Conseils.juridiques.=="Probablement pas"),
+                   sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Conseils.juridiques.=="Certainement pas"),
+                   sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Conseils.juridiques.=="Sans Avis")
+                )
+
+utiliseriez_data <- data.frame(utiliseriez_name, utiliseriez_value)
+
+colors <- c("rgb(116,140,65)", "rgb(137,165,78)", "rgb(215,228,189)", "rgb(215,228,189)", "rgb(234,241,222)")
+
+p <- plot_ly(utiliseriez_data, labels = utiliseriez_name, values = utiliseriez_value, 
+        type = 'pie',
+        sort=FALSE,
+        direction='clockwise',
+        
+        textposition = 'outside',
+        textinfo = 'label+percent',
+        #insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+        domain=list(x=list(0.2,0.7),y=list(0,0.7)),
+        text = ~paste('', utiliseriez_value, ' répondants'),
+        showlegend = TRUE) %>%
+  layout(#title = 'Utiliseriez-vous un service de conseils juridiques s\'il était disponible à l\'ULB?]',
+         #autosize = TRUE,
+         margin=list(autoexpand=TRUE))
+p
+```
+
+
+### Utiliseriez-vous ce type d'infrastructure ou de service s’il était disponible à l’ULB - [Infrastructure de stockage de données] ?
+
+Une très large majorité des répondants utiliserait une infrastructure de stockage de données de recherche s'il était disponible à l'ULB.
+
+![Tip](./warning-98596_640.png) Il s'agit du service/infrastructure qui remporte le plus de succès. 
+
+
+```{r utiliseriez-stockage }
+
+utiliseriez_name <- c(
+"Très certainement",
+"Certainement",
+"Probablement pas",
+"Certainement pas",
+"Sans Avis")
+
+utiliseriez_value<-c(sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Infrastructure.de.stockage.de.données.=="Très certainement"),
+                   sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Infrastructure.de.stockage.de.données.=="Certainement"),
+                   sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Infrastructure.de.stockage.de.données.=="Probablement pas"),
+                   sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Infrastructure.de.stockage.de.données.=="Certainement pas"),
+                   sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Infrastructure.de.stockage.de.données.=="Sans Avis")
+                )
+
+utiliseriez_data <- data.frame(utiliseriez_name, utiliseriez_value)
+
+colors <- c("rgb(116,140,65)", "rgb(137,165,78)", "rgb(215,228,189)", "rgb(215,228,189)", "rgb(234,241,222)")
+
+p <- plot_ly(utiliseriez_data, labels = utiliseriez_name, values = utiliseriez_value, 
+        type = 'pie',
+        sort=FALSE,
+        direction='clockwise',
+        
+        textposition = 'outside',
+        textinfo = 'label+percent',
+        #insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+        domain=list(x=list(0.2,0.7),y=list(0,0.7)),
+        text = ~paste('', utiliseriez_value, ' répondants'),
+        showlegend = TRUE) %>%
+  layout(#title = 'Utiliseriez-vous une infrastructure de stockage de données\n si elle était disponible à l’ULB',
+         #autosize = TRUE,
+         margin=list(autoexpand=TRUE))
+p
+```
+
+### Utiliseriez-vous ce type d'infrastructure ou de service s’il était disponible à l’ULB - [Infrastructure de traitement des données]
+
+Une minorité des répondants utiliserait une infrastructure de traitement de données de recherche s\'il était disponible à l'ULB.
+
+![Tip](./warning-98596_640.png) Il s'agit du service/infrastructure qui remporte le moins de succès. Sa mise en oeuvre n'est donc pas une priorité.
+
+```{r utiliseriez-traitement }
+
+utiliseriez_name <- c(
+"Très certainement",
+"Certainement",
+"Probablement pas",
+"Certainement pas",
+"Sans Avis")
+
+utiliseriez_value<-c(sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Infrastructure.de.traitement.des.données.=="Très certainement"),
+                   sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Infrastructure.de.traitement.des.données.=="Certainement"),
+                   sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Infrastructure.de.traitement.des.données.=="Probablement pas"),
+                   sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Infrastructure.de.traitement.des.données.=="Certainement pas"),
+                   sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Infrastructure.de.traitement.des.données.=="Sans Avis")
+                )
+
+utiliseriez_data <- data.frame(utiliseriez_name, utiliseriez_value)
+
+colors <- c("rgb(116,140,65)", "rgb(137,165,78)", "rgb(215,228,189)", "rgb(215,228,189)", "rgb(234,241,222)")
+
+p <- plot_ly(utiliseriez_data, labels = utiliseriez_name, values = utiliseriez_value, 
+        type = 'pie',
+        sort=FALSE,
+        direction='clockwise',
+        
+        textposition = 'outside',
+        textinfo = 'label+percent',
+        #insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+        domain=list(x=list(0.2,0.7),y=list(0,0.7)),
+        text = ~paste('', utiliseriez_value, ' répondants'),
+        showlegend = TRUE) %>%
+  layout(#title = 'Utiliseriez-vous  une infrastructure de traitement des données\n si elle était disponible à l’ULB]',
+         #autosize = TRUE,
+         margin=list(autoexpand=TRUE))
+p
+```
+
+
+### Utiliseriez-vous ce type d'infrastructure ou de service s’il était disponible à l’ULB - [Infrastructure d’archivage des données de recherche (dépôt)]
+
+Une très large majorité des répondants utiliserait une infrastructure d'archivage de données de recherche dépôt institutionnel s'il était disponible à l'ULB.
+
+![Tip](./warning-98596_640.png) Cela confirme les résultats exposés précédemment.
+
+```{r utiliseriez-depot }
+
+utiliseriez_name <- c(
+"Très certainement",
+"Certainement",
+"Probablement pas",
+"Certainement pas",
+"Sans Avis")
+
+utiliseriez_value<-c(sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Infrastructure.d.archivage.des.données.de.recherche..dépôt..=="Très certainement"),
+                   sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Infrastructure.d.archivage.des.données.de.recherche..dépôt..=="Certainement"),
+                   sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Infrastructure.d.archivage.des.données.de.recherche..dépôt..=="Probablement pas"),
+                   sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Infrastructure.d.archivage.des.données.de.recherche..dépôt..=="Certainement pas"),
+                   sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Infrastructure.d.archivage.des.données.de.recherche..dépôt..=="Sans Avis")
+                )
+
+utiliseriez_data <- data.frame(utiliseriez_name, utiliseriez_value)
+
+colors <- c("rgb(116,140,65)", "rgb(137,165,78)", "rgb(215,228,189)", "rgb(215,228,189)", "rgb(234,241,222)")
+
+p <- plot_ly(utiliseriez_data, labels = utiliseriez_name, values = utiliseriez_value, 
+        type = 'pie',
+        sort=FALSE,
+        direction='clockwise',
+        
+        textposition = 'outside',
+        textinfo = 'label+percent',
+        #insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+        domain=list(x=list(0.2,0.7),y=list(0,0.7)),
+        text = ~paste('', utiliseriez_value, ' répondants'),
+        showlegend = TRUE) %>%
+  layout(#title = 'Utiliseriez-vous une infrastructure d’archivage\n des données de recherche si elle était disponible à l’ULB ?]',
+         #autosize = TRUE,
+         margin=list(autoexpand=TRUE))
+p
+```
+
+### Utiliseriez-vous ce type d'infrastructure ou de service s’il était disponible à l’ULB - [Support spécifique à la gestion des données de recherche (création d'un plan de gestion des données (DMP), description et traitement des données)]
+
+Une minorité de répondants envisage recourir à un service de support spécifique à la gestion des données de recherche s'il était disponible à l'ULB.
+
+![Tip](./warning-98596_640.png) Peut-être cela s'explique-t-il par le fait que la plupart des chercheurs ne sont pas encore confrontés concrètement à la problématique de la gestion des données de la recherche puisque le DMP n'est pas encore exigé par tous les bailleurs de fonds.
+
+```{r utiliseriez-dmp}
+
+utiliseriez_name <- c(
+"Très certainement",
+"Certainement",
+"Probablement pas",
+"Certainement pas",
+"Sans Avis")
+
+utiliseriez_value<-c(sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Support.spécifique.à.la.gestion.des.données.de.recherche..création.d.un.plan.de.gestion.des.données..DMP...description.et.traitement.des.données..=="Très certainement"),
+                   sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Support.spécifique.à.la.gestion.des.données.de.recherche..création.d.un.plan.de.gestion.des.données..DMP...description.et.traitement.des.données..=="Certainement"),
+                   sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Support.spécifique.à.la.gestion.des.données.de.recherche..création.d.un.plan.de.gestion.des.données..DMP...description.et.traitement.des.données..=="Probablement pas"),
+                   sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Support.spécifique.à.la.gestion.des.données.de.recherche..création.d.un.plan.de.gestion.des.données..DMP...description.et.traitement.des.données..=="Certainement pas"),
+                   sum(expanded_data$Utiliseriez.vous.ce.type.d.infrastructure.ou.de.service.s.il.était.disponible.à.l.ULB....Support.spécifique.à.la.gestion.des.données.de.recherche..création.d.un.plan.de.gestion.des.données..DMP...description.et.traitement.des.données..=="Sans Avis")
+                )
+
+utiliseriez_data <- data.frame(utiliseriez_name, utiliseriez_value)
+
+colors <- c("rgb(116,140,65)", "rgb(137,165,78)", "rgb(215,228,189)", "rgb(215,228,189)", "rgb(234,241,222)")
+
+p <- plot_ly(utiliseriez_data, labels = utiliseriez_name, values = utiliseriez_value, 
+        type = 'pie',
+        sort=FALSE,
+        direction='clockwise',
+        
+        textposition = 'outside',
+        textinfo = 'label+percent',
+        #insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+        domain=list(x=list(0.2,0.7),y=list(0,0.7)),
+        text = ~paste('', utiliseriez_value, ' répondants'),
+        showlegend = TRUE) %>%
+  layout(#title = 'Utiliseriez-vous ce type d\'infrastructure ou de service s’il était disponible à l’ULB - [Support spécifique à la gestion des données de recherche (création d\'un plan de gestion des données (DMP), description et traitement des données)]',
+         #autosize = TRUE,
+         margin=list(autoexpand=TRUE))
+p
+```
+
+### Quelles actions devrait mener l’ULB en priorité - [Améliorer le réseau informatique pour permettre le transfert de grands volumes de données] ?
+
+Une grande majorité de répondants estime qu'il est important, très important et essentiel d'améliorer le réseau informatique.
+
+![Tip](./warning-98596_640.png) Le projet de déploiement du nouveau réseau dans les deux années à venir devrait pouvoir répondre à ces attentes.
+
+```{r priorite-reseau}
+
+priorite_name <- c(
+"Essentiel",
+"Très important",
+"Important",
+"Peu important",
+"Pas du tout important",
+"Sans avis")
+
+priorite_value<-c(sum(expanded_data$Quelles.actions.devrait.mener.l.ULB.en.priorité....Améliorer.le.réseau.informatique.pour.permettre.le.transfert.de.grands.volumes.de.données.=="Essentiel"),
+sum(expanded_data$Quelles.actions.devrait.mener.l.ULB.en.priorité....Améliorer.le.réseau.informatique.pour.permettre.le.transfert.de.grands.volumes.de.données.=="Très important"),
+sum(expanded_data$Quelles.actions.devrait.mener.l.ULB.en.priorité....Améliorer.le.réseau.informatique.pour.permettre.le.transfert.de.grands.volumes.de.données.=="Important"),
+sum(expanded_data$Quelles.actions.devrait.mener.l.ULB.en.priorité....Améliorer.le.réseau.informatique.pour.permettre.le.transfert.de.grands.volumes.de.données.=="Peu important"),
+sum(expanded_data$Quelles.actions.devrait.mener.l.ULB.en.priorité....Améliorer.le.réseau.informatique.pour.permettre.le.transfert.de.grands.volumes.de.données.=="Pas du tout important"),
+sum(expanded_data$Quelles.actions.devrait.mener.l.ULB.en.priorité....Améliorer.le.réseau.informatique.pour.permettre.le.transfert.de.grands.volumes.de.données.=="Sans avis"))                                                                        
+            
+priorite_data <- data.frame(priorite_name, priorite_value)
+
+colors <- c("rgb(116,140,65)", "rgb(137,165,78)","rgb(170,200,115)", "rgb(215,228,189)", "rgb(215,228,189)", "rgb(234,241,222)")
+
+p <- plot_ly(priorite_data, labels = priorite_name, values = priorite_value, 
+        type = 'pie',
+        sort=FALSE,
+        direction='clockwise',
+        
+        textposition = 'outside',
+        textinfo = 'label+percent',
+        #insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+        domain=list(x=list(0.2,0.7),y=list(0,0.7)),
+        text = ~paste('', priorite_value, ' répondants'),
+        showlegend = TRUE) %>%
+  layout(#title = 'Quelles actions devrait mener l’ULB en priorité - [Améliorer le réseau informatique pour permettre le transfert de grands volumes de données]',
+         #autosize = TRUE,
+         margin=list(autoexpand=TRUE))
+p
+```
+
+### Quelles actions devrait mener l’ULB en priorité - [Fournir des recommandations et des conseils sur la gestion des données] ?
+
+Une grande majorité de répondants estime qu'il est important, très important et essentiel de fournir des recommandations et des conseils sur la gestion des données.
+
+![Tip](./warning-98596_640.png) Le GT GDR vise précisément à formuler ces recommandations.
+
+```{r priorite-recommandations}
+
+priorite_name <- c(
+"Essentiel",
+"Très important",
+"Important",
+"Peu important",
+"Pas du tout important",
+"Sans avis")
+
+priorite_value<-c(sum(expanded_data$Quelles.actions.devrait.mener.l.ULB.en.priorité....Fournir.des.recommandations.et.des.conseils.sur.la.gestion.des.données.=="Essentiel"),
+sum(expanded_data$Quelles.actions.devrait.mener.l.ULB.en.priorité....Fournir.des.recommandations.et.des.conseils.sur.la.gestion.des.données.=="Très important"),
+sum(expanded_data$Quelles.actions.devrait.mener.l.ULB.en.priorité....Fournir.des.recommandations.et.des.conseils.sur.la.gestion.des.données.=="Important"),
+sum(expanded_data$Quelles.actions.devrait.mener.l.ULB.en.priorité....Fournir.des.recommandations.et.des.conseils.sur.la.gestion.des.données.=="Peu important"),
+sum(expanded_data$Quelles.actions.devrait.mener.l.ULB.en.priorité....Fournir.des.recommandations.et.des.conseils.sur.la.gestion.des.données.=="Pas du tout important"),
+sum(expanded_data$Quelles.actions.devrait.mener.l.ULB.en.priorité....Fournir.des.recommandations.et.des.conseils.sur.la.gestion.des.données.=="Sans avis"))                                                                        
+            
+priorite_data <- data.frame(priorite_name, priorite_value)
+
+colors <- c("rgb(116,140,65)", "rgb(137,165,78)","rgb(170,200,115)", "rgb(215,228,189)", "rgb(215,228,189)", "rgb(234,241,222)")
+
+p <- plot_ly(priorite_data, labels = priorite_name, values = priorite_value, 
+        type = 'pie',
+        sort=FALSE,
+        direction='clockwise',
+        
+        textposition = 'outside',
+        textinfo = 'label+percent',
+        #insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+        domain=list(x=list(0.2,0.7),y=list(0,0.7)),
+        text = ~paste('', priorite_value, ' répondants'),
+        showlegend = TRUE) %>%
+  layout(#title = 'Quelles actions devrait mener l’ULB en priorité - [Fournir des recommandations et des conseils sur la gestion des données]',
+         #autosize = TRUE,
+         margin=list(autoexpand=TRUE))
+p
+```
+
+### Quelles actions devrait mener l’ULB en priorité - [Inclure la gestion des données dans le cursus doctoral] ?
+
+Une grande majorité de répondants estime qu'il est important, très important et essentiel d'inclure la gestion des données dans le cursus doctoral
+
+![Tip](./warning-98596_640.png) Cet aspect relève probablement plus de la compétence des écoles doctorales ou des formations transversales organisées à l’ULB dans le cadre de la formation doctorale de 60 crédits ECTS.
+
+```{r priorite-cursus}
+
+priorite_name <- c(
+"Essentiel",
+"Très important",
+"Important",
+"Peu important",
+"Pas du tout important",
+"Sans avis")
+
+priorite_value<-c(sum(expanded_data$Quelles.actions.devrait.mener.l.ULB.en.priorité....Inclure.la.gestion.des.données.dans.le.cursus.doctoral.=="Essentiel"),
+sum(expanded_data$Quelles.actions.devrait.mener.l.ULB.en.priorité....Inclure.la.gestion.des.données.dans.le.cursus.doctoral.=="Très important"),
+sum(expanded_data$Quelles.actions.devrait.mener.l.ULB.en.priorité....Inclure.la.gestion.des.données.dans.le.cursus.doctoral.=="Important"),
+sum(expanded_data$Quelles.actions.devrait.mener.l.ULB.en.priorité....Inclure.la.gestion.des.données.dans.le.cursus.doctoral.=="Peu important"),
+sum(expanded_data$Quelles.actions.devrait.mener.l.ULB.en.priorité....Inclure.la.gestion.des.données.dans.le.cursus.doctoral.=="Pas du tout important"),
+sum(expanded_data$Quelles.actions.devrait.mener.l.ULB.en.priorité....Inclure.la.gestion.des.données.dans.le.cursus.doctoral.=="Sans avis"))                                                                        
+            
+priorite_data <- data.frame(priorite_name, priorite_value)
+
+colors <- c("rgb(116,140,65)", "rgb(137,165,78)","rgb(170,200,115)", "rgb(215,228,189)", "rgb(215,228,189)", "rgb(234,241,222)")
+
+p <- plot_ly(priorite_data, labels = priorite_name, values = priorite_value, 
+        type = 'pie',
+        sort=FALSE,
+        direction='clockwise',
+        
+        textposition = 'outside',
+        textinfo = 'label+percent',
+        #insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+        domain=list(x=list(0.2,0.7),y=list(0,0.7)),
+        text = ~paste('', priorite_value, ' répondants'),
+        showlegend = TRUE) %>%
+  layout(#title = 'Quelles actions devrait mener l’ULB en priorité - [Inclure la gestion des données dans le cursus doctoral]',
+         #autosize = TRUE,
+         margin=list(autoexpand=TRUE))
+p
+```
+
+### Quelles actions devrait mener l’ULB en priorité - [Inclure explicitement la gestion des données dans les responsabilités du chercheur]
+
+Une grande majorité de répondants estime qu'il est important, très important et essentiel d'inclure explicitement la gestion des données dans les responsabilités du chercheur.
+
+
+```{r priorite-responsabilite}
+
+priorite_name <- c(
+"Essentiel",
+"Très important",
+"Important",
+"Peu important",
+"Pas du tout important",
+"Sans avis")
+
+priorite_value<-c(sum(expanded_data$Quelles.actions.devrait.mener.l.ULB.en.priorité....Inclure.explicitement.la.gestion.des.données.dans.les.responsabilités.du.chercheur.=="Essentiel"),
+sum(expanded_data$Quelles.actions.devrait.mener.l.ULB.en.priorité....Inclure.explicitement.la.gestion.des.données.dans.les.responsabilités.du.chercheur.=="Très important"),
+sum(expanded_data$Quelles.actions.devrait.mener.l.ULB.en.priorité....Inclure.explicitement.la.gestion.des.données.dans.les.responsabilités.du.chercheur.=="Important"),
+sum(expanded_data$Quelles.actions.devrait.mener.l.ULB.en.priorité....Inclure.explicitement.la.gestion.des.données.dans.les.responsabilités.du.chercheur.=="Peu important"),
+sum(expanded_data$Quelles.actions.devrait.mener.l.ULB.en.priorité....Inclure.explicitement.la.gestion.des.données.dans.les.responsabilités.du.chercheur.=="Pas du tout important"),
+sum(expanded_data$Quelles.actions.devrait.mener.l.ULB.en.priorité....Inclure.explicitement.la.gestion.des.données.dans.les.responsabilités.du.chercheur.=="Sans avis"))                                                                        
+            
+priorite_data <- data.frame(priorite_name, priorite_value)
+
+colors <- c("rgb(116,140,65)", "rgb(137,165,78)","rgb(170,200,115)", "rgb(215,228,189)", "rgb(215,228,189)", "rgb(234,241,222)")
+
+p <- plot_ly(priorite_data, labels = priorite_name, values = priorite_value, 
+        type = 'pie',
+        sort=FALSE,
+        direction='clockwise',
+        
+        textposition = 'outside',
+        textinfo = 'label+percent',
+        #insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+        domain=list(x=list(0.2,0.7),y=list(0,0.7)),
+        text = ~paste('', priorite_value, ' répondants'),
+        showlegend = TRUE) %>%
+  layout(#title = 'Quelles actions devrait mener l’ULB en priorité - [Inclure explicitement la gestion des données dans les responsabilités du chercheur]',
+         #autosize = TRUE,
+         margin=list(autoexpand=TRUE))
+p
+```
+
+## Contact et commentaires
+
+### Pouvons-nous vous contacter au besoin pour un complément d’information ?
+
+Une majorité de répondants accepte d'être recontactée.
+
+```{r contact}
+
+contact_name <- c(
+"Oui",
+"Non")
+
+contact_value<-c(sum(mydata$Pouvons.nous.vous.contacter.au.besoin.pour.un.complément.d.information.=="Oui"),
+sum(mydata$Pouvons.nous.vous.contacter.au.besoin.pour.un.complément.d.information.=="Non")
+)                                                                        
+            
+contact_data <- data.frame(contact_name, contact_value)
+
+colors <- c("rgb(116,140,65)", "rgb(234,241,222)")
+
+p <- plot_ly(contact_data, labels = contact_name, values = contact_value, 
+        type = 'pie',
+        sort=FALSE,
+        direction='clockwise',
+        
+        textposition = 'outside',
+        textinfo = 'label+percent',
+        #insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+        domain=list(x=list(0.2,0.7),y=list(0,0.7)),
+        text = ~paste('', contact_value, ' répondants'),
+        showlegend = TRUE) %>%
+  layout(
+         margin=list(autoexpand=TRUE))
+p
+```
+
+
+
+### Commentaires des répondants
+```{r commentaires}
+
+comments <- mydata$Si.vous.le.souhaitez..vous.pouvez.indiquer.ici.vos.recommandations.ou.suggestions.relatives.à.la.gestion.des.données.de.recherche..[mydata$Si.vous.le.souhaitez..vous.pouvez.indiquer.ici.vos.recommandations.ou.suggestions.relatives.à.la.gestion.des.données.de.recherche..!=""]
+
+kable(comments, col.names="") %>% 
+        kable_styling(c("striped", full_width = FALSE, "condensed"))
+
+```
